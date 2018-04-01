@@ -1,0 +1,474 @@
+#include "featureExtraction.h"
+
+cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
+{
+
+	std::string inputFolder = baseDatabasePath + "/" + nameDataset + "/" + "temp";
+
+	std::string inputFile = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + featuresExtractionAlgorithm + nameFileFeatures;
+	FileStorage in(inputFile, FileStorage::READ);
+
+	cv::Mat image = imread(inputFolder + "/" + "imageTempROI.tiff", CV_LOAD_IMAGE_GRAYSCALE);
+	cv::Mat imageAlt = imread(inputFolder + "/" + "imageTempROI_alt.tiff", CV_LOAD_IMAGE_GRAYSCALE);
+
+	cv::resize(image, image, Size(80, 80));
+	cv::resize(imageAlt, imageAlt, Size(80, 80));
+
+	std::vector<KeyPoint> keypoints;
+
+	std::vector<cv::Mat> featuresVector;
+	cv::Mat featuresExtracted = runExtractFeature(image, featuresExtractionAlgorithm, keypoints);
+	featuresVector.push_back(featuresExtracted);
+
+	std::vector<cv::Mat> featuresVectorAlt;
+	cv::Mat featuresExtractedAlt = runExtractFeature(imageAlt, featuresExtractionAlgorithm);
+	featuresVectorAlt.push_back(featuresExtractedAlt);
+
+	int numberImages = 1;
+
+	int numberFeatures = 0;
+	for (int i = 0; i < featuresVector.size(); ++i)
+	{
+		numberFeatures += featuresVector[i].rows;
+	}
+
+	cv::Mat labels;
+	int binSize = 1000;
+	cv::Mat centers;
+	in["centers"] >> centers;
+
+	cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, binSize, CV_32FC1);
+
+	std::vector<cv::KeyPoint>::iterator keypointsIT;
+
+	try
+	{
+		for (keypointsIT = keypoints.begin(); keypointsIT != keypoints.end(); ++keypointsIT)
+		{
+			float minDistance = FLT_MAX;
+			int indexBin = -1;
+			for (int i = 0; i < binSize; ++i)
+			{
+				cv::Point2f point(keypointsIT->pt);
+				cv::Point2f centerCluster(centers.at<float>(i, 0), centers.at<float>(i, 1));
+
+				float distance = std::sqrt((point.x - centerCluster.x)*(point.x - centerCluster.x) + (point.y - centerCluster.y)*(point.y - centerCluster.y));
+				if (distance < minDistance)
+				{
+					minDistance = distance;
+					indexBin = i;
+				}
+			}
+			featuresDataOverBins.at<float>(0, indexBin) += 1;
+		}
+	}
+	catch (exception& e)
+	{
+		cout << e.what() << endl;
+	}
+
+	cv::normalize(featuresDataOverBins, featuresDataOverBins);
+
+	cv::Mat pcaMean;
+	in["pca_mean"] >> pcaMean;
+
+	cv::PCA pca(featuresDataOverBins, pcaMean, CV_PCA_DATA_AS_ROW, 0.90);
+
+	int featureSize = pca.eigenvectors.rows;
+	cv::Mat feature;
+	for (int i = 0; i < numberImages; ++i) {
+		feature = pca.project(featuresDataOverBins.row(i));
+	}
+
+	return feature;
+}
+
+void featureExtraction(std::string featuresExtractionAlgorithm)
+{
+	std::string inputFolder = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult;
+	std::string outputFolder = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult;
+
+	// Prendo il file yml in cui sono riportati i percorsi delle immagini croppate.
+	std::string inputFile = inputFolder + "/" + fileList;
+	FileStorage in(inputFile, FileStorage::READ);
+
+	//  Preparo il file di output in cui saranno inserite le features individuate.
+	std::string outputFile = outputFolder + "/" + featuresExtractionAlgorithm + nameFileFeatures;
+	FileStorage ou(outputFile, FileStorage::WRITE);
+
+	// Prendo il numero di immagini individuate da facialComponents.
+	int numberImages = 0;
+	in["number_of_image"] >> numberImages;
+
+	// Dichiaro il vettore che conterrà le features.
+	std::vector<cv::Mat> featuresVector;
+
+	long long startKFeautesExtraction = milliseconds_now();
+	// Itero per tutte le immagini individuate e salvate in facialComponents
+	for (int i = 0; i < numberImages; ++i)
+	{
+		// Scrivo in facePath i path alle immagini individuate in facialComponents.
+		std::string facePath;
+		in["image_" + std::to_string(i) + "_face"] >> facePath;
+
+		// Carico l'immagine e la salvo in face.
+		cv::Mat face = cv::imread(facePath, CV_LOAD_IMAGE_GRAYSCALE);
+		resize(face, face, Size(80, 80));
+
+		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
+
+		// Inserisco nel vettore delle features le features che individuato con la funzione runExtraFeature. Spefico l'immagine e il nome dell'"estrattore".
+		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
+		// Le righe rappresentanto il numero di features estratte per quell'immagine, cioè i keypoints.
+		// Le colonne sono un numero fisso, 128, dovuto all'implementazione con OpenCV (bin usati) e rappresentano i descriptors.
+		featuresVector.push_back(featuresExtracted);
+	}
+
+	long long elapsedFeaturesExtraction = milliseconds_now() - startKFeautesExtraction;
+	cout << "Time elapsed for extraction: " << elapsedFeaturesExtraction / 1000 << "s." << endl;
+
+	// Salvo il numero di features trovate iterando su tutto il vettore delle features.
+	int numberFeatures = 0;
+	for (int i = 0; i < featuresVector.size(); ++i)
+	{
+		// featuresVector[i] è l'i-esima matrice del vettore delle features delle immagini estratte.
+		// featuresVector[i].rows sono il numero di righe, cioè di keypoints, dell'immagine i-esima.
+		numberFeatures += featuresVector[i].rows;
+	}
+
+	cout << "Number features: " << numberFeatures << endl;
+
+	// Creo una matrice di zero con dimensioni specifiche: un numero di righe pari alle features individuate, e numero di colonne pari al numero di colonne di un elemento del vettore delle features featuresVector.
+	// La dimensioni finale della matrice sarà <numberFeatures>X128.
+	// La riga 1 contiene il primo keypoint e avrà 128 colonne con i rispettivi descriptors.
+	cv::Mat featuresData = cv::Mat::zeros(numberFeatures, featuresVector[0].cols, CV_32FC1);
+	int currentIndex = 0;
+	// Si inseriscono in featuresData le features del vettore delle features.
+	// L'indice i itera su featuresVector, mentre currentIndex è usato per iterare su featuresData.
+	for (int i = 0; i < featuresVector.size(); ++i)
+	{
+		// Inserisci in featuresData gli elementi di featuresData dell'i-esima immagine.
+		// featuresVector[i].rows prende il numero di keypoints dell'i-esima immagine.
+		// currentIndex è usato come indice per passare dal primo keypoint dell'i-esima immagine al primo dell'immagine i-esima+1.
+		featuresVector[i].copyTo(featuresData.rowRange(currentIndex, currentIndex + featuresVector[i].rows));
+		// Infatti si somma a currentIndex il numero di keypoints dell'i-esima immagine.
+		currentIndex += featuresVector[i].rows;
+	}
+
+	// Dichiaro alcune variabile necessarie al clustering con kmeans.
+	cv::Mat labels;
+	cv::Mat centers;
+	int binSize = 1000;
+	
+	long long startKMEANS = milliseconds_now();
+
+	// Parametri utilizzati in kmeans.
+	// featuresData: l'array di input di features.
+	// binSize: il numero di clusters in cui dividere le features.
+	// labels: contiene gli indici dei clusters.
+	// TermCriteria: il criterio di terminazione di kmeans: 
+	//	1. tipo di criterio scelto: ci si ferma quando si sono raggiunte il numero massimo di iterazioni e EPS è soddisfatto.
+	//	2. il numero massimo di iterazioni.
+	//	3. epsilon, c'è l'accuratezza a cui si deve arrivare (utilizzata come criterio di terminazione).
+	// attempts (3): numero di tenativi con cui kmeans deve ri-eseguire con centroidi differenti.
+	// KMEANS_PP_CENTERS: i centroidi sono random.
+	// centers: contiene i centroidi di tutti i clusters, una riga per ogni centroide.
+	kmeans(featuresData, binSize, labels, cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1.0), 3, KMEANS_PP_CENTERS, centers);
+
+	long long elapsedKMEANS = milliseconds_now() - startKMEANS;
+	cout << "Time elapsed for Kmeans: " << elapsedKMEANS / 1000 << "s." << endl;
+
+	// A questo punto si ha una label per ogni cluster di features.
+	// Si vuole avere un numero di features di ogni immagine fissato.
+
+	// Azzero currentIndex per usarlo successivamente.
+	currentIndex = 0;
+
+	int numberTest = 0;
+	cv::RNG random(cv::getTickCount());
+
+	// Una matrice per accogliere le nuove features.
+	// La grandezza deve essere rapportata al numero di immagini individuate e al numero di clusters scelto.
+	cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, binSize, CV_32FC1);
+	// Itero su tutte le immagini.
+
+	int counterLabelAngry = 0;
+	int counterLabelDisgust = 0;
+	int counterLabelFear = 0;
+	int counterLabelHappy = 0;
+	int counterLabelNeutral = 0;
+	int counterLabelSad = 0;
+	int counterLabelSurprised = 0;
+
+	long long startBagOfWords = milliseconds_now();
+	for (int i = 0; i < numberImages; ++i)
+	{
+		// Una matrice di features per ogni immagine.
+		// Una immagine, quindi una riga, ma un numero di colonne pari al numero di clusters.
+		cv::Mat feature = cv::Mat::zeros(1, binSize, CV_32FC1);
+		// Salvo il numero di features dell'immagine i-esima.
+		int numberImageFeatures = featuresVector[i].rows;
+		// Itero su tutte le features individuate dell'immagine corrente.
+		for (int j = 0; j < numberImageFeatures; ++j)
+		{
+			// Salvo in bin la label contenuta nella features corrente.
+			// Si utilizza currentIndex perché si deve "saltare" da una immagine all'altra e currentIndex fa questo.
+			// L'indice j itera su tutti i keypoints della i-esima immagine.
+			// Viene incrementato alla fine del ciclo for superiore.
+			int bin = labels.at<int>(currentIndex + j);
+			// Incremento la posizione di feature riferita all'attuale label di 1.
+			feature.at<float>(0, bin) += 1;
+		}
+
+		// Normalizzo le features su tutti i valori che contiene.
+		cv::normalize(feature, feature);
+
+		// Prendo il path dell'attuale immagine che sto processando dal solito file.
+		std::string path;
+		in["image_" + std::to_string(i) + "_face"] >> path;
+
+		// Prendo il nome del file.
+		std::string filename = path.substr(inputFolder.length() + 1, path.length());
+		
+		// Si prende la parte di nostro interesse, cioè quella che specifica l'espressione dell'attuale immagine.
+		string codeExpressionDataset = filename.substr(3, 2);
+
+		int label = -1;
+		if (!codeExpressionDataset.compare("AN")) { // Angry
+			label = 0;
+			++counterLabelAngry;
+		}
+		else if (!codeExpressionDataset.compare("DI")) { // Disgust
+			label = 1;
+			++counterLabelDisgust;
+		}
+		else if (!codeExpressionDataset.compare("FE")) { // Fear
+			label = 2;
+			++counterLabelFear;
+		}
+		else if (!codeExpressionDataset.compare("HA")) { // Happy
+			label = 3;
+			++counterLabelHappy;
+		}
+		else if (!codeExpressionDataset.compare("NE")) { // Neutral
+			label = 4;
+			++counterLabelNeutral;
+		}
+		else if (!codeExpressionDataset.compare("SA")) { // Sad
+			label = 5;
+			++counterLabelSad;
+		}
+		else if (!codeExpressionDataset.compare("SU")) { // Surprised
+			label = 6;
+			++counterLabelSurprised;
+		}
+
+		// Si scrive nel file di output le informazioni riguardandi la label.
+		ou << "image_label_" + std::to_string(i) << label;
+
+		// Si splitta il database in due parti, una per il test e una per il train.
+		// Si utilizza una distribuzione uniforme per fare la scelta.
+		double c = random.uniform(0., 1.);
+		bool isTrain = true;
+		if (c > 0.8) {
+			isTrain = false;
+			numberTest += 1;
+		}
+		
+		// Si scrive nel file a quale dataset appartiene l'immagine corrente (train o test).
+		ou << "image_is_train_" + to_string(i) << isTrain;
+
+		// Sull'immagine corrente il "lavoro" è finito, quindi si copia feature (una variabile temporanea al ciclo su cui si è lavorato) e si inserisce nel vettore finale.
+		// La riga i contiene le features dell'immagine i-esima.
+		feature.copyTo(featuresDataOverBins.row(i));
+
+		// Se ne era parlato prima. Questo ci permette di saltare all'immagine successiva.
+		currentIndex += featuresVector[i].rows;
+	}
+
+	long long elapsedBagOfWords = milliseconds_now() - startBagOfWords;
+	cout << "Time elapsed for bag of words: " << elapsedBagOfWords / 1000 << "s." << endl;
+
+	long long startPCA = milliseconds_now();
+
+	// A questo punto si utilizza PCA per ridurre lo la dimensione dello spazio delle features.
+	// Infatti, si era aumentata la dimensione per avere uniformità su tutte le immagini.
+	// A questo punto, però, dobbiamo di nuovo ridurlo, perché il dataset non contiene poche immagine confrontate alla dimensione delle features.
+	// Se non si facesse, il classificatore tenderebbe a fare overfitting sul training set e non riuscirebbe a generalizzare.
+	// Si usa PCA, quindi, per ridurre lo spazio, tenere le features più importanti che hanno la maggiore varianza.
+	cv::PCA pca(featuresDataOverBins, cv::Mat(), CV_PCA_DATA_AS_ROW, 0.90);
+	
+	// Alcune dichiarazioni di variabili utili.
+	int featureSize = pca.eigenvectors.rows;
+	cv::Mat feature;
+	// Itero su tutte le immagine del dataset.
+	for (int i = 0; i < numberImages; ++i) {
+		// Riduco la dimensione dello spazio delle features.
+		feature = pca.project(featuresDataOverBins.row(i));
+		// Si salva il risultato nel file di output, cioè una variabile mat che contiene le features dell'immagine i-esima.
+		ou << "image_feature_" + to_string(i) << feature;
+	}
+	
+	long long elapsedPCA = milliseconds_now() - startPCA;
+	cout << "Time elapsed for PCA: " << elapsedPCA / 1000 << "s." << endl;
+
+	// Il numero di features trovato.
+	// E' il medesimo per ogni immagine.
+	ou << "feature_size" << featureSize;
+	// Il numero di immagini del dataset.
+	ou << "number_of_image" << numberImages;
+	// Il numero di label del dataset.
+	ou << "number_of_label" << 7;
+	ou << "label_0" << "Angry";
+	ou << "label_1" << "Disgusted";
+	ou << "label_2" << "Fear";
+	ou << "label_3" << "Happy";
+	ou << "label_4" << "Neural";
+	ou << "label_5" << "Sad";
+	ou << "label_6" << "Surprised";
+	// Il numero di immagini usate per il train.
+	ou << "number_of_train" << numberImages - numberTest;
+	// Il numero di immagini usate per il test.
+	ou << "number_of_test" << numberTest;
+	ou << "pca_mean" << pca.mean;
+	ou << "pca_eigenvalues" << pca.eigenvalues;
+	ou << "pca_eigenvectors" << pca.eigenvectors;
+	ou << "centers" << centers;
+
+	cout << "-------" << endl;
+	cout << "Number angry: " << counterLabelAngry << endl;
+	cout << "Number disgust: " << counterLabelDisgust << endl;
+	cout << "Number Fear: " << counterLabelFear << endl;
+	cout << "Number Happy: " << counterLabelHappy << endl;
+	cout << "Number Neutral: " << counterLabelNeutral << endl;
+	cout << "Number Sad: " << counterLabelSad << endl;
+	cout << "Number Surprised: " << counterLabelSurprised << endl;
+	cout << "-------" << endl;
+
+	ou.release();
+	in.release();
+}
+
+// Loader per gli "estrattori" di features.
+cv::Mat runExtractFeature(cv::Mat image, std::string featureName) {
+	cv::Mat descriptors;
+
+	if (featureName.compare("kaze") == 0) {
+		descriptors = extractFeaturesKaze(image);
+	}
+	else if (featureName.compare("sift") == 0) {
+		descriptors = extractFeaturesSift(image);
+	}
+	else if (featureName.compare("surf") == 0) {
+		descriptors = extractFeaturesSurf(image);
+	}
+	else if (featureName.compare("brisk") == 0) {
+		descriptors = extractFeaturesBrisk(image);
+	}
+	else if (featureName.compare("daisy") == 0) {
+		descriptors = extractFeaturesDaisy(image);
+	}
+	return descriptors;
+}
+
+cv::Mat runExtractFeature(cv::Mat image, std::string featureName, std::vector<cv::KeyPoint>& kp) {
+	cv::Mat descriptors;
+
+	if (featureName.compare("kaze") == 0) {
+		descriptors = extractFeaturesKaze(image);
+	}
+	else if (featureName.compare("sift") == 0) {
+		descriptors = extractFeaturesSift(image, kp);
+	}
+	else if (featureName.compare("surf") == 0) {
+		descriptors = extractFeaturesSurf(image);
+	}
+	else if (featureName.compare("brisk") == 0) {
+		descriptors = extractFeaturesBrisk(image);
+	}
+	else if (featureName.compare("daisy") == 0) {
+		descriptors = extractFeaturesDaisy(image);
+	}
+	return descriptors;
+}
+
+cv::Mat extractFeaturesSift(cv::Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> sift = cv::xfeatures2d::SIFT::create();
+	sift->detect(image, keypoints, cv::Mat());
+	sift->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesSift(cv::Mat image, std::vector<cv::KeyPoint>& kp) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> sift = cv::xfeatures2d::SIFT::create();
+	sift->detect(image, keypoints, cv::Mat());
+	sift->compute(image, keypoints, descriptors);
+
+	kp = keypoints;
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesSurf(Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> surf = cv::xfeatures2d::SURF::create();
+	surf->detect(image, keypoints, cv::Mat());
+	surf->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesKaze(cv::Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::DescriptorExtractor> kaze = cv::KAZE::create();
+	kaze->detect(image, keypoints, cv::Mat());
+	kaze->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesBrisk(cv::Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::DescriptorExtractor> brisk = cv::BRISK::create();
+	brisk->detect(image, keypoints, cv::Mat());
+	brisk->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesDaisy(Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::FeatureDetector> surf = cv::xfeatures2d::SURF::create();
+	surf->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::DescriptorExtractor> daisy = cv::xfeatures2d::DAISY::create();
+	daisy->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesOrb(Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::Feature2D> fast = cv::ORB::create();
+	fast->detect(image, keypoints, cv::Mat());
+	fast->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
