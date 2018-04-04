@@ -298,17 +298,80 @@ int main(int argc, char* argv[])
 			std::string facialMethodInRun;
 			std::string histTypeInRun;
 			std::string featuresExtractorInRun = "sift";
+			bool roiInRun;
+			bool landmarkInRun;
+			int cascadeChoseInRun;
+			std::string tempStringInRun;
 
 			std::string c;
 			while (true)
 			{
+				std::cout << "Give me facial method" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, facialMethodInRun);
+
+				std::cout << "Give me hist type" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, histTypeInRun);
+
+				std::cout << "Give me roi" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, tempStringInRun);
+				if (!tempStringInRun.compare("yes"))
+				{
+					roiInRun = true;
+				}
+				else
+				{
+					roiInRun = false;
+				}
+
+				std::cout << "Give me landmark" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, tempStringInRun);
+				if (!tempStringInRun.compare("yes"))
+				{
+					landmarkInRun = true;
+				}
+				else
+				{
+					landmarkInRun = false;
+				};
+
+				std::cout << "Give me cascade" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, tempStringInRun);
+				if (!tempStringInRun.compare("default"))
+				{
+					cascadeChoseInRun = 0;
+				}
+				else if(!tempStringInRun.compare("alt"))
+				{
+					cascadeChoseInRun = 1;
+				}
+				else if (!tempStringInRun.compare("alt2"))
+				{
+					cascadeChoseInRun = 2;
+				}
+
+				std::cout << "Facial chose: " << facialMethodInRun << endl;
+				std::cout << "Hist chose: " << histTypeInRun << endl;
+				std::cout << "ROI chose: " << roiInRun << endl;
+				std::cout << "Landmark chose: " << landmarkInRun << endl;
+				std::cout << "XML cascade chose: " << cascadeChoseInRun << endl;
+
 				if (sourceImage == 0) // static image
 				{
-					getFace(facialMethod, histType, 1, 0, roi, landmark, cascadeChose);
+					getFace(facialMethodInRun, histTypeInRun, 1, 0, roiInRun, landmarkInRun, cascadeChoseInRun);
 				}
 				else if (sourceImage == 1) // camera image
 				{
-					getFace(facialMethod, histType, 1, 1, roi, landmark, cascadeChose);
+					getFace(facialMethodInRun, histTypeInRun, 1, 1, roiInRun, landmarkInRun, cascadeChoseInRun);
 				}
 				else
 				{
