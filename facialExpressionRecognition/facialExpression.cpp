@@ -27,29 +27,30 @@ int main(int argc, char* argv[])
 	int cascadeChose = 0; // 0 -> default, 1 -> alt, 2 -> alt2
 	std::string tempString;
 
-    std::cout <<
-        "param 1 : facial method" << endl <<
-            "\t -> default: cascade;" << endl <<
-            "\t -> cascade : cascade;" << endl <<
+	std::cout <<
+		"param 1 : facial method" << endl <<
+			"\t -> default : cascade;" << endl <<
+			"\t -> cascade : cascade;" << endl <<
+			"\t -> cnn : cnn " << endl <<
             "\t -> hog : hog;" << endl <<
         "param 2 : histogram type" << endl <<
-            "\t -> default: null;" << endl <<
+            "\t -> default : null;" << endl <<
             "\t -> hist : histogram;" << endl <<
             "\t -> clahe : clahe;" << endl <<
         "param 3 : roi or roialt (only with landmark)" << endl <<
-            "\t -> default: roi;" << endl <<
+            "\t -> default : roi;" << endl <<
             "\t -> roi : roi;" << endl <<
             "\t -> roialt : roialt;" << endl <<
         "param 4 : if cascade want landmark" << endl <<
-            "\t -> default: yes;" << endl <<
+            "\t -> default : yes;" << endl <<
             "\t -> no : no, without;" << endl <<
             "\t -> yes : yes, with landmark;" << endl <<
         "param 5 : if cascade want default cascade, alt or alt2" << endl <<
-            "\t -> default: default cascade;" << endl <<
+            "\t -> default : default cascade;" << endl <<
             "\t -> alt : alt cascade;" << endl <<
             "\t -> alt2 : alt2 cascade;" << endl <<
         "param 6 : if duplication of dataset" << endl <<
-            "\t -> default: no;" << endl <<
+            "\t -> default : no;" << endl <<
             "\t -> 0 : no;" << endl <<
             "\t -> 1 : yes;" << endl;
 
@@ -65,6 +66,11 @@ int main(int argc, char* argv[])
 		if (!tempString.compare("hog"))
 		{
 			facialMethod = "hog";
+		}
+
+		if (!tempString.compare("cnn"))
+		{
+			facialMethod = "cnn";
 		}
 
 		if(!tempString.compare("default"))

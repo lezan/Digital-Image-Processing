@@ -87,7 +87,17 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	cv::CascadeClassifier faceCascade;
 
-	dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName) >> predictor;
+	net_type net;
+
+	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi))
+	{
+		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
+	}
+
+	if (!facialMethod.compare("cnn"))
+	{
+		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> net;
+	}
 
 	cv::Mat faceROI;
 	cv::Mat faceROIAlt;
@@ -132,7 +142,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 		if (!facialMethod.compare("hog"))
 		{
 			detector = dlib::get_frontal_face_detector();
-
+			
 			std::vector<dlib::rectangle> faces = detector(cimg);
 			if (faces.size() > 1)
 			{
@@ -203,6 +213,22 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				faceROI = cv::Mat(output, faces[bestIndex]);
 			}
 
+		}
+		else if (!facialMethod.compare("cnn"))
+		{
+			try
+			{
+				dlib::matrix<dlib::rgb_pixel> img;
+				dlib::assign_image(img, dlib::cv_image<uchar>(output));
+				std::vector<dlib::mmod_rect> dets = net(img);
+
+				shape = predictor(cimg, dets[0].rect);
+				faceROI = output(dlibRectangleToOpenCV(dets[0].rect));
+			}
+			catch (exception& e)
+			{
+				std::cout << e.what() << endl;
+			}
 		}
 		else
 		{

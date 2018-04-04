@@ -1,8 +1,10 @@
 #ifndef defbase
-//const std::string baseDatabasePath = "D:/Google Drive/Magistrale/Primo anno/ELIVA - Elaborazione di Immagini e Visione Artificiale/Progetto/Database";
+const std::string baseDatabasePath = "D:/Google Drive/Magistrale/Primo anno/ELIVA - Elaborazione di Immagini e Visione Artificiale/Progetto/Database";
 //const std::string baseDatabasePath = "../../Database";
-const std::string baseDatabasePath = "Database";
+//const std::string baseDatabasePath = "Database";
 const std::string shapePredictorDataName = "shape_predictor_68_face_landmarks.dat";
+const std::string shapePredictorDataName2 = "shape_predictor_5_face_landmarks.dat";
+const std::string cnnFaceDetector = "mmod_human_face_detector.dat";
 const std::string cascadeDataName = "haarcascade_frontalface_default.xml";
 const std::string cascadeDataName2 = "haarcascade_frontalface_alt.xml";
 const std::string cascadeDataName3 = "haarcascade_frontalface_alt2.xml";
