@@ -1,6 +1,6 @@
 #include "facialComponents.h"
 
-void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, bool roi, bool landmark, int cascadeChose)
+void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool landmark, std::string cascadeChose)
 {
 
 	// ***
@@ -89,7 +89,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	net_type net;
 
-	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi))
+	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi.compare("roialt")))
 	{
 		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
 	}
@@ -163,11 +163,11 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 		}
 		else if (!facialMethod.compare("cascade"))
 		{
-			if (cascadeChose == 0)
+			if (!cascadeChose.compare("defaul"))
 			{
 				faceCascade.load(baseDatabasePath + "/" + cascadeDataName);
 			}
-			else if (cascadeChose == 1)
+			else if (!cascadeChose.compare("alt"))
 			{
 				faceCascade.load(baseDatabasePath + "/" + cascadeDataName2);
 			}
@@ -241,7 +241,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 		//
 		// ***
 
-		if (!roi)
+		if (!roi.compare("roialt"))
 		{
 			cv::Point centerEyeRight = cv::Point(
 				(shape.part(42).x() + shape.part(45).x()) / 2,
@@ -276,7 +276,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				currentFilename = filename;
 				currentFilename.replace(filename.length() - 4, 4, "face.tiff");
 
-				if (roi)
+				if (!roi.compare("roi"))
 				{
 					cv::imwrite(outputPath + "/" + currentFilename, faceROI);
 
@@ -291,7 +291,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 			else
 			{
-				if (roi)
+				if (!roi.compare("roi"))
 				{
 					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROI);
 				}

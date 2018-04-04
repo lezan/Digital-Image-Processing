@@ -13,7 +13,7 @@
 using namespace dlib;
 
 //int facialComponents(cv::Mat image);
-void getFace(std::string method, std::string histType, int version, int imageSourceType, bool roi, bool landmark, int cascadeChose);
+void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool landmark, std::string cascadeChose);
 std::vector<std::string> getListFile(std::string directory);
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r);
 static dlib::rectangle openCVRectToDlib(cv::Rect r);

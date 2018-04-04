@@ -22,9 +22,9 @@ int main(int argc, char* argv[])
 
 	std::string facialMethod; // cascade o hog
 	std::string histType; //hist o clahe
-	bool roi = true;
-	bool landmark = true;
-	int cascadeChose = 0; // 0 -> default, 1 -> alt, 2 -> alt2
+	std::string roi;
+	bool landmark;
+	std::string cascadeChose; // 0 -> default, 1 -> alt, 2 -> alt2
 	std::string tempString;
 
 	std::cout <<
@@ -62,20 +62,22 @@ int main(int argc, char* argv[])
 		{
 			facialMethod = "cascade";
 		}
-
-		if (!tempString.compare("hog"))
+		else if (!tempString.compare("hog"))
 		{
 			facialMethod = "hog";
 		}
-
-		if (!tempString.compare("cnn"))
+		else if (!tempString.compare("cnn"))
 		{
 			facialMethod = "cnn";
 		}
-
-		if(!tempString.compare("default"))
+		else if(!tempString.compare("default"))
 		{
 			facialMethod = "cascade";
+		}
+		else
+		{
+			facialMethod = "cascade";
+			std::cout << "Error facialMethod: put a default (cascade)." << endl;
 		}
 	}
 
@@ -87,15 +89,18 @@ int main(int argc, char* argv[])
 		{
 			histType = "hist";
 		}
-
-		if (!tempString.compare("clahe"))
+		else if (!tempString.compare("clahe"))
 		{
 			histType = "clahe";
 		}
-
-		if(!tempString.compare("default"))
+		else if(!tempString.compare("default"))
 		{
 			histType = "";
+		}
+		else
+		{
+			histType = "";
+			std::cout << "Error histType: put a default (null)." << endl;
 		}
 	}
 
@@ -105,17 +110,20 @@ int main(int argc, char* argv[])
 
 		if (!tempString.compare("roi"))
 		{
-			roi = true;
+			roi = "roi";
 		}
-
-		if (!tempString.compare("roialt"))
+		else if (!tempString.compare("roialt"))
 		{
-			roi = false;
+			roi = "roialt";
 		}
-
-		if (!tempString.compare("default"))
+		else if (!tempString.compare("default"))
 		{
-			roi = true;
+			roi = "roi";
+		}
+		else
+		{
+			roi = "roi";
+			std::cout << "Error ROI: put a defualt (roi)." << endl;
 		}
 	}
 
@@ -126,21 +134,26 @@ int main(int argc, char* argv[])
 		{
 			landmark = true;
 		}
-
-		if (!tempString.compare("no"))
+		else if (!tempString.compare("no"))
 		{
-			landmark = false;
+			if (!roi.compare("roialt"))
+			{
+				landmark = true;
+				std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
+			}
+			else
+			{
+				landmark = false;
+			}
 		}
-
-		if (!tempString.compare("no") && roi == false)
+		else if (!tempString.compare("default"))
 		{
 			landmark = true;
-			std::cout << "You can not use roialt without landmark. Force to use lankmark" << endl;
 		}
-
-		if (!tempString.compare("default"))
+		else
 		{
 			landmark = true;
+			std::cout << "Error landmkar: put a default (yes)." << endl;
 		}
 	}
 
@@ -150,17 +163,20 @@ int main(int argc, char* argv[])
 
 		if (!tempString.compare("default"))
 		{
-			cascadeChose = 0;
+			cascadeChose = "default";
 		}
-
-		if (!tempString.compare("alt"))
+		else if (!tempString.compare("alt"))
 		{
-			cascadeChose = 1;
+			cascadeChose = "alt";
 		}
-
-		if (!tempString.compare("alt2"))
+		else if (!tempString.compare("alt2"))
 		{
-			cascadeChose = 2;
+			cascadeChose = "alt2";
+		}
+		else
+		{
+			cascadeChose = "default";
+			std::cout << "Error cascadeChose: put a default (default)." << endl;
 		}
 	}
 
@@ -297,39 +313,83 @@ int main(int argc, char* argv[])
 
 			std::string facialMethodInRun;
 			std::string histTypeInRun;
-			std::string featuresExtractorInRun = "sift";
-			bool roiInRun;
+			std::string roiInRun;
 			bool landmarkInRun;
-			int cascadeChoseInRun;
+			std::string cascadeChoseInRun;
 			std::string tempStringInRun;
+
+			std::string featuresExtractorInRun = "sift";
 
 			std::string c;
 			while (true)
 			{
-				std::cout << "Give me facial method" << endl;
-				std::cin.clear();
-				std::cin.sync();
-				std::getline(std::cin, facialMethodInRun);
-
-				std::cout << "Give me hist type" << endl;
-				std::cin.clear();
-				std::cin.sync();
-				std::getline(std::cin, histTypeInRun);
-
-				std::cout << "Give me roi" << endl;
+				std::cout << endl << "Give me facial method (cascade, hog, cnn)" << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
-				if (!tempStringInRun.compare("yes"))
+				if (!tempStringInRun.compare("cascade"))
 				{
-					roiInRun = true;
+					facialMethodInRun = "cascade";
+				}
+				else if (!tempStringInRun.compare("hog"))
+				{
+					facialMethodInRun = "hog";
+				}
+				else if (!tempStringInRun.compare("cnn"))
+				{
+					facialMethodInRun = "cnn";
 				}
 				else
 				{
-					roiInRun = false;
+					facialMethodInRun = "cascade";
+					std::cout << "Error facialMethod: put a default (cascade).";
 				}
 
-				std::cout << "Give me landmark" << endl;
+				std::cout << "Give me hist type (default, hist, clahe)" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, tempStringInRun);
+				if (!tempStringInRun.compare("hist"))
+				{
+					histTypeInRun = "hist";
+				}
+				else if (!tempStringInRun.compare("clahe"))
+				{
+					histTypeInRun = "clahe";
+				}
+				else if (!tempStringInRun.compare("default"))
+				{
+					histTypeInRun = "default";
+				}
+				else
+				{
+					histTypeInRun = "default";
+					std::cout << "Error histType: put a default (null).";
+				}
+
+				std::cout << "Give me roi (roi, roialt, default)" << endl;
+				std::cin.clear();
+				std::cin.sync();
+				std::getline(std::cin, tempStringInRun);
+				if (!tempStringInRun.compare("roi"))
+				{
+					roiInRun = "roi";
+				}
+				else if(!tempStringInRun.compare("roialt"))
+				{
+					roiInRun = "roialt";
+				}
+				else if (!tempString.compare("default"))
+				{
+					roiInRun = "roi";
+				}
+				else
+				{
+					roiInRun = "roi";
+					std::cout << "Error ROI: put a default (roi)." << endl;
+				}
+
+				std::cout << "Give me landmark (yes, no, default)" << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -337,33 +397,62 @@ int main(int argc, char* argv[])
 				{
 					landmarkInRun = true;
 				}
+				else if(!tempStringInRun.compare("no"))
+				{
+					if (!roi.compare("roialt"))
+					{
+						landmarkInRun = true;
+						std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
+					}
+					else
+					{
+						landmarkInRun = false;
+					}
+				}
+				else if(!tempStringInRun.compare("default"))
+				{
+					landmarkInRun = true;
+				}
 				else
 				{
-					landmarkInRun = false;
-				};
-
-				std::cout << "Give me cascade" << endl;
-				std::cin.clear();
-				std::cin.sync();
-				std::getline(std::cin, tempStringInRun);
-				if (!tempStringInRun.compare("default"))
-				{
-					cascadeChoseInRun = 0;
-				}
-				else if(!tempStringInRun.compare("alt"))
-				{
-					cascadeChoseInRun = 1;
-				}
-				else if (!tempStringInRun.compare("alt2"))
-				{
-					cascadeChoseInRun = 2;
+					landmarkInRun = true;
+					std::cout << "Error landmark: put a default (yes).";
 				}
 
-				std::cout << "Facial chose: " << facialMethodInRun << endl;
+				if (!facialMethodInRun.compare("cascade"))
+				{
+					std::cout << "Give me cascade (default, alt, alt2)" << endl;
+					std::cin.clear();
+					std::cin.sync();
+					std::getline(std::cin, tempStringInRun);
+					if (!tempStringInRun.compare("default"))
+					{
+						cascadeChoseInRun = "default";
+					}
+					else if (!tempStringInRun.compare("alt"))
+					{
+						cascadeChoseInRun = "alt";
+					}
+					else if (!tempStringInRun.compare("alt2"))
+					{
+						cascadeChoseInRun = "alt2";
+					}
+					else
+					{
+						cascadeChoseInRun = "default";
+						std::cout << "Errore cascade: put a default (default)." << endl;
+					}
+				}
+				else
+				{
+					cascadeChoseInRun = "default";
+				}
+
+				std::cout << endl << "Facial chose: " << facialMethodInRun << endl;
 				std::cout << "Hist chose: " << histTypeInRun << endl;
 				std::cout << "ROI chose: " << roiInRun << endl;
 				std::cout << "Landmark chose: " << landmarkInRun << endl;
-				std::cout << "XML cascade chose: " << cascadeChoseInRun << endl;
+				std::cout << "XML cascade chose: " << cascadeChoseInRun << endl << endl;
 
 				if (sourceImage == 0) // static image
 				{
