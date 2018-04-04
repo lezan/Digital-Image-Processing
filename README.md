@@ -1,1 +1,1 @@
-# Facial expressione recognition
+# Facial expressions recognition
