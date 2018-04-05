@@ -45,10 +45,12 @@ int main(int argc, char* argv[])
             "\t -> default : yes;" << endl <<
             "\t -> no : no, without;" << endl <<
             "\t -> yes : yes, with landmark;" << endl <<
-        "param 5 : if cascade want default cascade, alt or alt2" << endl <<
+        "param 5 : if cascade want default cascade, alt, alt2, lbp or lbp2" << endl <<
             "\t -> default : default cascade;" << endl <<
             "\t -> alt : alt cascade;" << endl <<
             "\t -> alt2 : alt2 cascade;" << endl <<
+			"\t -> lbp : lbp cascade;" << endl <<
+			"\t -> lbp2 : lbp2 cascade;" << endl <<
         "param 6 : if duplication of dataset" << endl <<
             "\t -> default : no;" << endl <<
             "\t -> 0 : no;" << endl <<
@@ -114,7 +116,15 @@ int main(int argc, char* argv[])
 		}
 		else if (!tempString.compare("roialt"))
 		{
-			roi = "roialt";
+			if (!facialMethod.compare("cnn"))
+			{
+				std::cout << "Error: Can not use cnn with roialt at the moment. Force to use roi." << endl;
+				roi = "roi";
+			}
+			else
+			{
+				roi = "roialt";
+			}
 		}
 		else if (!tempString.compare("default"))
 		{
@@ -172,6 +182,14 @@ int main(int argc, char* argv[])
 		else if (!tempString.compare("alt2"))
 		{
 			cascadeChose = "alt2";
+		}
+		else if (!tempString.compare("lbp"))
+		{
+			cascadeChose = "lbp";
+		}
+		else if (!tempString.compare("lbp2"))
+		{
+			cascadeChose = "lbp2";
 		}
 		else
 		{
@@ -377,7 +395,15 @@ int main(int argc, char* argv[])
 				}
 				else if(!tempStringInRun.compare("roialt"))
 				{
-					roiInRun = "roialt";
+					if (!facialMethodInRun.compare("cnn"))
+					{
+						std::cout << "Error: Can not use cnn with roialt at the moment. Force to use roi." << endl;
+						roiInRun = "roi";
+					}
+					else
+					{
+						roiInRun = "roialt";
+					}
 				}
 				else if (!tempString.compare("default"))
 				{
@@ -399,7 +425,7 @@ int main(int argc, char* argv[])
 				}
 				else if(!tempStringInRun.compare("no"))
 				{
-					if (!roi.compare("roialt"))
+					if (!roiInRun.compare("roialt"))
 					{
 						landmarkInRun = true;
 						std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
@@ -421,7 +447,7 @@ int main(int argc, char* argv[])
 
 				if (!facialMethodInRun.compare("cascade"))
 				{
-					std::cout << "Give me cascade (default, alt, alt2)" << endl;
+					std::cout << "Give me cascade (default, alt, alt2, lbp or lbp2)" << endl;
 					std::cin.clear();
 					std::cin.sync();
 					std::getline(std::cin, tempStringInRun);
@@ -436,6 +462,14 @@ int main(int argc, char* argv[])
 					else if (!tempStringInRun.compare("alt2"))
 					{
 						cascadeChoseInRun = "alt2";
+					}
+					else if (!tempStringInRun.compare("lbp"))
+					{
+						cascadeChoseInRun = "lbp";
+					}
+					else if (!tempStringInRun.compare("lbp2"))
+					{
+						cascadeChoseInRun = "lbp2";
 					}
 					else
 					{

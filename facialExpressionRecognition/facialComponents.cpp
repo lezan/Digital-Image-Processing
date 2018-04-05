@@ -91,11 +91,12 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi.compare("roialt")))
 	{
-		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
+		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName) >> predictor;
 	}
 
 	if (!facialMethod.compare("cnn"))
 	{
+		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
 		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> net;
 	}
 
@@ -146,9 +147,13 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			std::vector<dlib::rectangle> faces = detector(cimg);
 			if (faces.size() > 1)
 			{
-				std::cout << "ERROR ERROR" << endl;
+				std::cout << "ERROR: too much faces." << endl;
 			}
 
+			if (faces.size() < 1)
+			{
+				std::cout << "ERROR: where are faces." << endl;
+			}
 			shape = predictor(cimg, faces[0]);
 
             try
@@ -171,6 +176,14 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			{
 				faceCascade.load(baseDatabasePath + "/" + cascadeDataName2);
 			}
+			else if (!cascadeChose.compare("lbp"))
+			{
+				faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName);
+			}
+			else if (!cascadeChose.compare("lbp2"))
+			{
+				faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName2);
+			}
 			else
 			{
 				faceCascade.load(baseDatabasePath + "/" + cascadeDataName3);
@@ -182,7 +195,17 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 
 			std::vector<cv::Rect> faces;
-			faceCascade.detectMultiScale(output, faces, 1.2, 3, 0, cv::Size(50, 50));
+			faceCascade.detectMultiScale(output, faces, 1.2, 3, 0 | CASCADE_SCALE_IMAGE, cv::Size(50, 50));
+
+			if (faces.size() > 1)
+			{
+				std::cout << "ERROR: too much faces." << endl;
+			}
+
+			if (faces.size() < 1)
+			{
+				std::cout << "ERROR: where are faces." << endl;
+			}
 
 			int bestIndex = 0;
 			int maxWidth = 0;
