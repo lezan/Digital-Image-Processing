@@ -73,26 +73,47 @@ float runClassifier(std::string algorithmName, std::string inputFeatures, std::s
 		}
 	}
 
-	//cv::Ptr<cv::ml::SVM> svmModel;
 	float accuracy;
 
 	// Controllo che sia stato selezionato come algoritmo di classificazione svm e lancio la funzione.
 	// I parametri sono abbastanza intutivi: ha bisogno di tutto.
-	if (algorithmName.compare("svm") == 0)
+	if (!algorithmName.compare("svm"))
 	{
 		accuracy = svmClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
 	}
+	else if (!algorithmName.compare("knn"))
+	{
+		int numberMaximumNeighbors = 2;
+		accuracy = knnClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels, numberMaximumNeighbors);
+	}
+	else if (!algorithmName.compare("bayes"))
+	{
+		accuracy = bayesClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
+	}
+	else if (!algorithmName.compare("randomForest"))
+	{
+		accuracy = randomForestClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
+	}
+	else if (!algorithmName.compare("logisticRegression"))
+	{
+		accuracy = logisticRegressionClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
+	}
+
+	cout << "Accuracy = " << accuracy << endl;
 
 	in.release();
+
 	return accuracy;
 }
 
-float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels) {
+float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+{
 
 	cv::Ptr<cv::ml::SVM> svm = cv::ml::SVM::create();
 	svm->setType(cv::ml::SVM::C_SVC);
 	//svm->setKernel(cv::ml::SVM::RBF);
-	Ptr<ml::TrainData> trainData = ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+	svm->setKernel(cv::ml::SVM::LINEAR);
+	Ptr<ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
 	//svm->train(trainData);
 	svm->trainAuto(trainData);
 
@@ -113,7 +134,113 @@ float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 
 	float accuracy = computeAccuracy(predicted, testLabels);
 
-	cout << "Accuracy = " << accuracy << endl;
+	return accuracy;
+}
+
+float knnClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels, int k)
+{
+	cv::Ptr<ml::KNearest> knn = ml::KNearest::create();
+	cv::Ptr<ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+	knn->setDefaultK(k);
+	knn->setIsClassifier(true);
+	knn->train(trainData);
+
+	knn->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameKnnModelTrained);
+
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	for (int i = 0; i < testFeatures.rows; i++)
+	{
+		cv::Mat sample = testFeatures.row(i);
+		cv::Mat predict;
+		knn->findNearest(sample, k, predict);
+		predicted.at<int>(i, predict.at<float>(0, 0)) = 1.0f;
+
+		/*
+		float predict = knn->predict(sample);
+		predicted.at<int>(i, (int)predict) = 1.0f;
+		*/
+	}
+
+	float accuracy = computeAccuracy(predicted, testLabels);
+
+	return accuracy;
+}
+
+float bayesClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels) 
+{
+	cv::Ptr<cv::ml::NormalBayesClassifier> bayes = cv::ml::NormalBayesClassifier::create();
+	cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+	bayes->train(trainData);
+
+	bayes->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameBayesModelTrained);
+
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	for (int i = 0; i < testFeatures.rows; i++)
+	{
+		cv::Mat sample = testFeatures.row(i);
+		cv::Mat output, outputProb;
+		bayes->predictProb(sample, output, outputProb);
+
+		predicted.at<int>(i, output.at<unsigned int>(0, 0)) = 1.0f;
+
+		/*
+		float predict = bayes->predict(sample);
+		predicted.at<int>(i, (int)predict) = 1.0f;
+		*/
+	}
+
+	float accuracy = computeAccuracy(predicted, testLabels);
+
+	return accuracy;
+}
+
+float randomForestClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+{
+	cv::Ptr<cv::ml::RTrees> randomForest = cv::ml::RTrees::create();
+	cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+	randomForest->train(trainData);
+
+	randomForest->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameRandomForestModelTrained);
+
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	for (int i = 0; i < testFeatures.rows; i++) {
+		cv::Mat sample = testFeatures.row(i);
+		float predict = randomForest->predict(sample);
+		predicted.at<int>(i, (int)predict) = 1.0f;
+	}
+
+	float accuracy = computeAccuracy(predicted, testLabels);
+
+	return accuracy;
+}
+
+float logisticRegressionClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+{
+	cv::Ptr<cv::ml::LogisticRegression> logisticRegression = cv::ml::LogisticRegression::create();
+	//cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+
+	logisticRegression->setLearningRate(0.001);
+	logisticRegression->setIterations(10);
+	logisticRegression->setRegularization(cv::ml::LogisticRegression::REG_L2);
+	logisticRegression->setTrainMethod(cv::ml::LogisticRegression::BATCH);
+	logisticRegression->setMiniBatchSize(1);
+
+	trainFeatures.convertTo(trainFeatures, CV_32F);
+	trainLabels.convertTo(trainLabels, CV_32S);
+
+	logisticRegression->train(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
+	//logisticRegression->train(trainData);
+
+	logisticRegression->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameLogisticRegressionModelTrained);
+
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	for (int i = 0; i < testFeatures.rows; i++) {
+		cv::Mat sample = testFeatures.row(i);
+		float predict = logisticRegression->predict(sample);
+		predicted.at<int>(i, (int)predict) = 1.0f;
+	}
+
+	float accuracy = computeAccuracy(predicted, testLabels);
 
 	return accuracy;
 }
@@ -214,7 +341,7 @@ float computeAccuracy(cv::Mat predicted, cv::Mat actual) {
 				trueSurpriseLabel++;
 				break;
 			default:
-				return 0;
+				return -1;
 			}
 		}
 		else
@@ -374,6 +501,10 @@ float computeAccuracy(cv::Mat predicted, cv::Mat actual) {
 			}
 		}
 	}
+
+	float precision = 0; // true positive / (true positive + false positive)
+	float recall = 0; // true positive / (true positive + false negative)
+	float f1Score = 0; // 2 * (precision * recall) / (precision + recall)
 
 	std::cout << "Fin." << endl;
 	std::cout << "-------" << endl;

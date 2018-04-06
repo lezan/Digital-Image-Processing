@@ -1,6 +1,5 @@
 #ifndef defbase
-const std::string baseDatabasePath = "D:/Google Drive/Magistrale/Primo anno/ELIVA - Elaborazione di Immagini e Visione Artificiale/Progetto/Database";
-//const std::string baseDatabasePath = "../../Database";
+const std::string baseDatabasePath = "../../Database";
 //const std::string baseDatabasePath = "Database";
 const std::string shapePredictorDataName = "shape_predictor_68_face_landmarks.dat";
 const std::string shapePredictorDataName2 = "shape_predictor_5_face_landmarks.dat";
@@ -16,6 +15,10 @@ const std::string nameDirectoryResult = "result";
 const std::string nameFileFeatures = "Features.yml";
 const std::string nameOutputFileAccuracyResult = "result.txt";
 const std::string nameSVMModelTrained = "svmModelTrained.xml";
+const std::string nameKnnModelTrained = "knnModelTrained.xml";
+const std::string nameBayesModelTrained = "bayesModelTrained.xml";
+const std::string nameRandomForestModelTrained = "randomForestModelTrained.xml";
+const std::string nameLogisticRegressionModelTrained = "logisticRegressionModelTrained.xml";
 const std::string nameDictionary = "dictionary.yml";
 const std::string namePca = "pca.yml";
 const int widthImageOutputResize = 160;

@@ -316,17 +316,18 @@ int main(int argc, char* argv[])
 		}
 
 		std::string algorithmName = "svm";
+		//std::string algorithmName = "knn";
+		//std::string algorithmName = "bayes";
+		//std::string algorithmName = "randomForest";
+		//std::string algorithmName = "logisticRegression";
 
 		if (TRAIN_CLASSIFIER_DO)
 		{
-			float temp1 = runClassifier(algorithmName, baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + featuresExtractor + nameFileFeatures, baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult);
+			float accuracy = runClassifier(algorithmName, baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + featuresExtractor + nameFileFeatures, baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult);
 		}
 
 		if (DO_PREDICT)
 		{
-			cv::Ptr<cv::ml::SVM> svm;
-			svm = cv::ml::StatModel::load<ml::SVM>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameSVMModelTrained);
-
 			int sourceImage = 0; // 0 -> image; 1 -> camera;
 
 			std::string facialMethodInRun;
@@ -360,7 +361,7 @@ int main(int argc, char* argv[])
 				else
 				{
 					facialMethodInRun = "cascade";
-					std::cout << "Error facialMethod: put a default (cascade).";
+					std::cout << "Error facialMethod: put a default (cascade)." << endl;
 				}
 
 				std::cout << "Give me hist type (default, hist, clahe)" << endl;
@@ -382,7 +383,7 @@ int main(int argc, char* argv[])
 				else
 				{
 					histTypeInRun = "default";
-					std::cout << "Error histType: put a default (null).";
+					std::cout << "Error histType: put a default (null)." << endl;
 				}
 
 				std::cout << "Give me roi (roi, roialt, default)" << endl;
@@ -442,7 +443,7 @@ int main(int argc, char* argv[])
 				else
 				{
 					landmarkInRun = true;
-					std::cout << "Error landmark: put a default (yes).";
+					std::cout << "Error landmark: put a default (yes)." << endl;
 				}
 
 				if (!facialMethodInRun.compare("cascade"))
@@ -502,10 +503,69 @@ int main(int argc, char* argv[])
 				}
 
 				cv::Mat feature = extractFeaturesFromSingleImage(featuresExtractorInRun);
-				float labelPredicted = svm->predict(feature);
-				std::cout << "Label predicted is: " << labelPredicted << endl;
+				float labelPredicted;
 
-				std::cout << "Go on? Y(yes) or N(no)" << endl;
+				if (!algorithmName.compare("svm"))
+				{
+					cv::Ptr<cv::ml::SVM> svm;
+					svm = cv::ml::StatModel::load<ml::SVM>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameSVMModelTrained);
+					labelPredicted = svm->predict(feature);
+				}
+				else if (!algorithmName.compare("knn"))
+				{
+					cv::Ptr<cv::ml::KNearest> knn;
+					knn = cv::ml::StatModel::load<ml::KNearest>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameKnnModelTrained);
+					labelPredicted = knn->predict(feature);
+				}
+				else if (!algorithmName.compare("bayes"))
+				{
+					cv::Ptr<cv::ml::NormalBayesClassifier> bayes;
+					bayes = cv::ml::StatModel::load<ml::NormalBayesClassifier>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameBayesModelTrained);
+					labelPredicted = bayes->predict(feature);
+				}
+				else if (!algorithmName.compare("randomForest"))
+				{
+					cv::Ptr<cv::ml::RTrees> randomForest;
+					randomForest = cv::ml::StatModel::load<ml::RTrees>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameRandomForestModelTrained);
+					labelPredicted = randomForest->predict(feature);
+				}
+				else if (!algorithmName.compare("logisticRegression"))
+				{
+					cv::Ptr<cv::ml::LogisticRegression> logisticRegression;
+					logisticRegression = cv::ml::StatModel::load<ml::LogisticRegression>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameLogisticRegressionModelTrained);
+					labelPredicted = logisticRegression->predict(feature);
+				}
+
+				std::cout << "Label predicted is: ";
+
+				switch ((int)labelPredicted)
+				{
+				case 0:
+					std::cout << "tangry." << endl;
+					break;
+				case 1:
+					std::cout << "disgust." << endl;
+					break;
+				case 2:
+					std::cout << "fear." << endl;
+					break;
+				case 3:
+					std::cout << "happy." << endl;
+					break;
+				case 4:
+					std::cout << "neutral." << endl;
+					break;
+				case 5:
+					std::cout << "sad." << endl;
+					break;
+				case 6:
+					std::cout << "surprise.d" << endl;
+					break;
+				default:
+					break;
+				}
+
+				std::cout << "Go on? Y(yes) or N(no)." << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, c);
