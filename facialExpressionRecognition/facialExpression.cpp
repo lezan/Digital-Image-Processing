@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
             "\t -> default : roi;" << endl <<
             "\t -> roi : roi;" << endl <<
             "\t -> roialt : roialt;" << endl <<
+			"\t -> chip : chip;" << endl <<
         "param 4 : if cascade want landmark" << endl <<
             "\t -> default : yes;" << endl <<
             "\t -> no : no, without;" << endl <<
@@ -126,6 +127,10 @@ int main(int argc, char* argv[])
 				roi = "roialt";
 			}
 		}
+		else if (!tempString.compare("chip"))
+		{
+			roi = "chip";
+		}
 		else if (!tempString.compare("default"))
 		{
 			roi = "roi";
@@ -150,6 +155,11 @@ int main(int argc, char* argv[])
 			{
 				landmark = true;
 				std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
+			}
+			else if (!roi.compare("chip"))
+			{
+				landmark = true;
+				std::cout << "You can not use chip without landmark. Force to use lankmark." << endl;
 			}
 			else
 			{
@@ -386,7 +396,7 @@ int main(int argc, char* argv[])
 					std::cout << "Error histType: put a default (null)." << endl;
 				}
 
-				std::cout << "Give me roi (roi, roialt, default)" << endl;
+				std::cout << "Give me roi (roi, roialt, chip, default)" << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -405,6 +415,10 @@ int main(int argc, char* argv[])
 					{
 						roiInRun = "roialt";
 					}
+				}
+				else if (!tempString.compare("chip"))
+				{
+					roiInRun = "chip";
 				}
 				else if (!tempString.compare("default"))
 				{
@@ -430,6 +444,11 @@ int main(int argc, char* argv[])
 					{
 						landmarkInRun = true;
 						std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
+					}
+					else if (!roiInRun.compare("chip"))
+					{
+						landmarkInRun = true;
+						std::cout << "You can not use chip without landmark. Force to use lankmark." << endl;
 					}
 					else
 					{
@@ -541,7 +560,7 @@ int main(int argc, char* argv[])
 				switch ((int)labelPredicted)
 				{
 				case 0:
-					std::cout << "tangry." << endl;
+					std::cout << "angry." << endl;
 					break;
 				case 1:
 					std::cout << "disgust." << endl;
@@ -559,7 +578,7 @@ int main(int argc, char* argv[])
 					std::cout << "sad." << endl;
 					break;
 				case 6:
-					std::cout << "surprise.d" << endl;
+					std::cout << "surprise." << endl;
 					break;
 				default:
 					break;

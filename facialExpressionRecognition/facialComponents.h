@@ -3,6 +3,7 @@
 #include <dlib/image_processing.h>
 #include <dlib/opencv.h>
 #include <dlib/dnn.h>
+#include <dlib/image_io.h>
 #include <opencv2/core.hpp>
 #include <opencv2\imgproc\imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -12,7 +13,6 @@
 
 using namespace dlib;
 
-//int facialComponents(cv::Mat image);
 void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool landmark, std::string cascadeChose);
 std::vector<std::string> getListFile(std::string directory);
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r);

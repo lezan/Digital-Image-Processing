@@ -135,7 +135,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	net_type net;
 
-	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi.compare("roialt")))
+	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi.compare("roialt")) || (!facialMethod.compare("cascade") && !roi.compare("chip")))
 	{
 		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName) >> predictor;
 	}
@@ -148,6 +148,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	cv::Mat faceROI;
 	cv::Mat faceROIAlt;
+	cv::Mat faceChip;
 
 	for (int imageId = 0; imageId < imageSize; ++imageId)
 	{
@@ -186,6 +187,8 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		dlib::full_object_detection shape;
 
+		dlib::array2d<dlib::rgb_pixel> face_chip;
+
 		if (!facialMethod.compare("hog"))
 		{
 			detector = dlib::get_frontal_face_detector();
@@ -202,15 +205,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 			shape = predictor(cimg, faces[0]);
 
-            try
-            {
-				faceROI = output(dlibRectangleToOpenCV(faces[0]));
-            }
-            catch (exception& e)
-            {
-                std::cout << e.what() << endl;
-            }
-
+			faceROI = output(dlibRectangleToOpenCV(faces[0]));
 		}
 		else if (!facialMethod.compare("cascade"))
 		{
@@ -267,15 +262,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			if (landmark)
 			{
 				shape = predictor(cimg, openCVRectToDlib(faces[bestIndex]));
-
-				try
-				{
-					faceROI = output(faces[bestIndex]);
-				}
-				catch (exception& e)
-				{
-					std::cout << e.what() << endl;
-				}
+				faceROI = output(faces[bestIndex]);
 			}
 			else
 			{
@@ -331,9 +318,14 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 			cv::resize(faceROIAlt, faceROIAlt, cv::Size(widthImageOutputResize, heightImageOutputResize));
 		}
-		else
+		else if (!roi.compare("roi"))
 		{
 			cv::resize(faceROI, faceROI, cv::Size(widthImageOutputResize, heightImageOutputResize));
+		}
+		else if (!roi.compare("chip"))
+		{
+			dlib::extract_image_chip(cimg, dlib::get_face_chip_details(shape, 160, 0), face_chip);
+			faceChip = dlib::toMat(face_chip);
 		}
 
 		/*LANDMARKPOSITION shapeMin, shapeMax;
@@ -387,10 +379,14 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 					cv::imwrite(outputPath + "/" + currentFilename, faceROI);
 
 				}
-				else
+				else if(!roi.compare("roialt"))
 				{
 					cv::imwrite(outputPath + "/" + currentFilename, faceROIAlt);
 
+				}
+				else if (!roi.compare("chip"))
+				{
+					cv::imwrite(outputPath + "/" + currentFilename, faceChip);
 				}
 
 				fs << "image_" + std::to_string(imageId) + "_face" << outputPath + "/" + currentFilename;
@@ -401,10 +397,14 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				{
 					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROI);
 				}
-				else
+				else if (!roi.compare("roialt"))
 				{
 					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROIAlt);
 
+				}
+				else if (!roi.compare("chip"))
+				{
+					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceChip);
 				}
 			}
 		}
