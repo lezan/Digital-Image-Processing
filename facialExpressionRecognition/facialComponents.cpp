@@ -205,7 +205,10 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 			shape = predictor(cimg, faces[0]);
 
-			faceROI = output(dlibRectangleToOpenCV(faces[0]));
+			if (!roi.compare("roi"))
+			{
+				faceROI = output(dlibRectangleToOpenCV(faces[0]));
+			}
 		}
 		else if (!facialMethod.compare("cascade"))
 		{
@@ -248,25 +251,17 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				std::cout << "ERROR: where are faces." << endl;
 			}
 
-			int bestIndex = 0;
-			int maxWidth = 0;
-			for (unsigned int i = 0; i < faces.size(); ++i) 
-			{
-				if (faces[i].width > maxWidth) 
-				{
-					bestIndex = i;
-					maxWidth = faces[i].width;
-				}
-			}
-
 			if (landmark)
 			{
-				shape = predictor(cimg, openCVRectToDlib(faces[bestIndex]));
-				faceROI = output(faces[bestIndex]);
+				shape = predictor(cimg, openCVRectToDlib(faces[0]));
+				if (!roi.compare("roi"))
+				{
+					faceROI = output(faces[0]);
+				}
 			}
 			else
 			{
-				faceROI = cv::Mat(output, faces[bestIndex]);
+				faceROI = cv::Mat(output, faces[0]);
 			}
 
 		}
@@ -279,7 +274,11 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				std::vector<dlib::mmod_rect> dets = net(img);
 
 				shape = predictor(cimg, dets[0].rect);
-				faceROI = output(dlibRectangleToOpenCV(dets[0].rect));
+
+				if (!roi.compare("roi"))
+				{
+					faceROI = output(dlibRectangleToOpenCV(dets[0].rect));
+				}
 			}
 			catch (exception& e)
 			{
