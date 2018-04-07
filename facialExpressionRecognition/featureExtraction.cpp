@@ -2,7 +2,6 @@
 
 cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 {
-
 	std::string inputFolder = baseDatabasePath + "/" + nameDataset + "/" + "temp";
 
 	std::string inputFile = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + featuresExtractionAlgorithm + nameFileFeatures;
@@ -27,35 +26,77 @@ cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 	cv::Mat dictionary;
 	fsDictionary["dictionary"] >> dictionary;
 
-	cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
-	cv::Ptr<cv::DescriptorExtractor> extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcher);
+	cv::Ptr<cv::FeatureDetector> detector;
+	cv::Ptr<cv::DescriptorExtractor> extractor;
+
+	if (!featuresExtractionAlgorithm.compare("sift"))
+	{
+		detector = cv::xfeatures2d::SiftFeatureDetector::create();
+		extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("surf"))
+	{
+		detector = cv::xfeatures2d::SurfFeatureDetector::create();
+		extractor = cv::xfeatures2d::SurfDescriptorExtractor::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("kaze"))
+	{
+		detector = cv::KAZE::create();
+		extractor = cv::KAZE::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("daisy"))
+	{
+		detector = cv::KAZE::create();
+		extractor = cv::xfeatures2d::DAISY::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("brisk"))
+	{
+		detector = cv::BRISK::create();
+		extractor = cv::BRISK::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("orb"))
+	{
+		detector = cv::ORB::create();
+		extractor = cv::ORB::create();
+	}
+
+	// Float
+	//cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
+
+	// Binary
+	cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING2);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
 	bowDE.setVocabulary(dictionary);
 
-	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> detector = cv::xfeatures2d::SiftFeatureDetector::create();
+	int dictionarySize = dictionary.rows;
 
-int dictionarySize = dictionary.rows;
+	cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, dictionarySize, CV_32FC1);
 
-cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, dictionarySize, CV_32FC1);
+	std::vector<cv::KeyPoint> keypoints;
+	detector->detect(image, keypoints);
+	cv::Mat bowDescriptors;
+	bowDE.compute(image, keypoints, bowDescriptors);
 
-std::vector<cv::KeyPoint> keypoints;
-detector->detect(image, keypoints);
-cv::Mat bowDescriptors;
-bowDE.compute(image, keypoints, bowDescriptors);
+	bowDescriptors.copyTo(featuresDataOverBins);
 
-bowDescriptors.copyTo(featuresDataOverBins);
+	cv::PCA pca;
 
-cv::PCA pca;
+	pca.read(fsPca.root());
 
-pca.read(fsPca.root());
+	int featureSize = pca.eigenvectors.rows;
+	cv::Mat feature;
+	for (int i = 0; i < numberImages; ++i) {
+		feature = pca.project(featuresDataOverBins.row(i));
+	}
 
-int featureSize = pca.eigenvectors.rows;
-cv::Mat feature;
-for (int i = 0; i < numberImages; ++i) {
-	feature = pca.project(featuresDataOverBins.row(i));
-}
-
-return feature;
+	return feature;
 }
 
 void featureExtraction(std::string featuresExtractionAlgorithm)
@@ -117,13 +158,28 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	int dictionarySize = 1000;
 	cv::TermCriteria termCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1.0);
 	int retries = 3;
+	int maxIterations = 10;
 	int centersFlags = KMEANS_PP_CENTERS;
 
-	cv::BOWKMeansTrainer bowTrainer(dictionarySize, termCriteria, retries, centersFlags);
+	cv::Ptr<cv::BOWTrainer> bowTrainer;
 
-	bowTrainer.add(featuresVector);
+	if (!featuresExtractionAlgorithm.compare("sift") || !featuresExtractionAlgorithm.compare("surf") || !featuresExtractionAlgorithm.compare("kaze") || !featuresExtractionAlgorithm.compare("daisy"))
+	{
+		bowTrainer = cv::makePtr<BOWKMeansTrainer>(dictionarySize, termCriteria, retries, centersFlags);
+	}
 
-	cv::Mat dictionary = bowTrainer.cluster();
+	if (!featuresExtractionAlgorithm.compare("brisk") || !featuresExtractionAlgorithm.compare("orb"))
+	{
+		bowTrainer = cv::makePtr<BOWKmajorityTrainer>(dictionarySize, maxIterations);
+	}
+
+	//cv::BOWKMeansTrainer bowTrainer(dictionarySize, termCriteria, retries, centersFlags);
+
+	bowTrainer->add(featuresVector);
+	//bowTrainer.add(featuresVector);
+
+	cv::Mat dictionary = bowTrainer->cluster();
+	//cv::Mat dictionary = bowTrainer.cluster();
 
 	fsDictionary << "dictionary" << dictionary;
 
@@ -132,38 +188,48 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 	if (!featuresExtractionAlgorithm.compare("sift"))
 	{
-		extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
 		detector = cv::xfeatures2d::SiftFeatureDetector::create();
+		extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
 	}
 	else if (!featuresExtractionAlgorithm.compare("surf"))
 	{
-		extractor = cv::xfeatures2d::SurfDescriptorExtractor::create();
 		detector = cv::xfeatures2d::SurfFeatureDetector::create();
+		extractor = cv::xfeatures2d::SurfDescriptorExtractor::create();
 	}
 	else if (!featuresExtractionAlgorithm.compare("kaze"))
 	{
-		extractor = cv::KAZE::create();
 		detector = cv::KAZE::create();
-	}
-	else if (!featuresExtractionAlgorithm.compare("brisk"))
-	{
-		extractor = cv::BRISK::create();
-		detector = cv::BRISK::create();
+		extractor = cv::KAZE::create();
 	}
 	else if (!featuresExtractionAlgorithm.compare("daisy"))
 	{
+		detector = cv::KAZE::create();
 		extractor = cv::xfeatures2d::DAISY::create();
-		detector = cv::xfeatures2d::DAISY::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("brisk"))
+	{
+		detector = cv::BRISK::create();
+		extractor = cv::BRISK::create();
 	}
 	else if (!featuresExtractionAlgorithm.compare("orb"))
 	{
-		extractor = cv::ORB::create();
 		detector = cv::ORB::create();
+		extractor = cv::ORB::create();
 	}
 
-	cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
+	// Float
+	cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
 
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcher);
+	// Binary
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING2);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
 	bowDE.setVocabulary(dictionary);
 
 	int numberTest = 0;
@@ -326,11 +392,11 @@ cv::Mat runExtractFeature(cv::Mat image, std::string featureName) {
 	else if (!featureName.compare("surf")) {
 		descriptors = extractFeaturesSurf(image);
 	}
-	else if (!featureName.compare("brisk")) {
-		descriptors = extractFeaturesBrisk(image);
-	}
 	else if (!featureName.compare("daisy")) {
 		descriptors = extractFeaturesDaisy(image);
+	}
+	else if (!featureName.compare("brisk")) {
+		descriptors = extractFeaturesBrisk(image);
 	}
 	else if (!featureName.compare("orb")) {
 		descriptors = extractFeaturesOrb(image);
@@ -388,19 +454,6 @@ cv::Mat extractFeaturesKaze(cv::Mat image) {
 	return descriptors;
 }
 
-cv::Mat extractFeaturesBrisk(cv::Mat image) {
-	cv::Mat descriptors;
-	std::vector<cv::KeyPoint> keypoints;
-
-	cv::Ptr<cv::FeatureDetector> briskDetector = cv::BRISK::create();
-	briskDetector->detect(image, keypoints, cv::Mat());
-
-	cv::Ptr<cv::DescriptorExtractor> briskExtractor = cv::BRISK::create();
-	briskExtractor->compute(image, keypoints, descriptors);
-
-	return descriptors;
-}
-
 cv::Mat extractFeaturesDaisy(Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
@@ -410,6 +463,19 @@ cv::Mat extractFeaturesDaisy(Mat image) {
 
 	cv::Ptr<cv::DescriptorExtractor> daisyExtractor = cv::xfeatures2d::DAISY::create();
 	daisyExtractor->compute(image, keypoints, descriptors);
+
+	return descriptors;
+}
+
+cv::Mat extractFeaturesBrisk(cv::Mat image) {
+	cv::Mat descriptors;
+	std::vector<cv::KeyPoint> keypoints;
+
+	cv::Ptr<cv::FeatureDetector> briskDetector = cv::BRISK::create();
+	briskDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::DescriptorExtractor> briskExtractor = cv::BRISK::create();
+	briskExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }

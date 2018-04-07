@@ -122,14 +122,14 @@ float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 	// Array per contenere tutti i risultati delle label predette.
 	// Una riga per ogni immagine che fa parte del dataset di test.
 	// Una colonna per ogni label differente, nel nostro caso 7 (7 espressioni facciali).
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1); // CV_32FC1 mia ersione CV_32F loro
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++) {
 		// Si prende la i-esima feature dell'i-esima immagine.
 		cv::Mat sample = testFeatures.row(i);
 		// Si prende la label predetta per l'i-esima features.
 		float predict = svm->predict(sample);
 		// Si mette a 1 l'elemento dell'array dell'i-esima riga e della colonna della label predetta.
-		predicted.at<int>(i, (int)predict) = 1.0f; //predicted.at<float>(i, (int)predict) = 1.0f; loro versione
+		predicted.at<float>(i, (int)predict) = 1.0f; //predicted.at<int>(i, (int)predict) = 1.0f;
 	}
 
 	float accuracy = computeAccuracy(predicted, testLabels);
@@ -147,13 +147,13 @@ float knnClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 
 	knn->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameKnnModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++)
 	{
 		cv::Mat sample = testFeatures.row(i);
 		cv::Mat predict;
 		knn->findNearest(sample, k, predict);
-		predicted.at<int>(i, predict.at<float>(0, 0)) = 1.0f;
+		predicted.at<float>(i, predict.at<float>(0, 0)) = 1.0f; // predicted.at<int>(i, predict.at<float>(0, 0)) = 1.0f;
 
 		/*
 		float predict = knn->predict(sample);
@@ -174,14 +174,14 @@ float bayesClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabe
 
 	bayes->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameBayesModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++)
 	{
 		cv::Mat sample = testFeatures.row(i);
 		cv::Mat output, outputProb;
 		bayes->predictProb(sample, output, outputProb);
 
-		predicted.at<int>(i, output.at<unsigned int>(0, 0)) = 1.0f;
+		predicted.at<float>(i, output.at<unsigned int>(0, 0)) = 1.0f; // predicted.at<int>(i, output.at<unsigned int>(0, 0)) = 1.0f;
 
 		/*
 		float predict = bayes->predict(sample);
@@ -202,11 +202,11 @@ float randomForestClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat tr
 
 	randomForest->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameRandomForestModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++) {
 		cv::Mat sample = testFeatures.row(i);
 		float predict = randomForest->predict(sample);
-		predicted.at<int>(i, (int)predict) = 1.0f;
+		predicted.at<float>(i, (int)predict) = 1.0f; // predicted.at<int>(i, (int)predict) = 1.0f;
 	}
 
 	float accuracy = computeAccuracy(predicted, testLabels);
@@ -226,18 +226,18 @@ float logisticRegressionClassifier(int numberslabel, cv::Mat trainFeatures, cv::
 	logisticRegression->setMiniBatchSize(1);
 
 	trainFeatures.convertTo(trainFeatures, CV_32F);
-	trainLabels.convertTo(trainLabels, CV_32S);
+	trainLabels.convertTo(trainLabels, CV_32F);
 
 	logisticRegression->train(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
 	//logisticRegression->train(trainData);
 
 	logisticRegression->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameLogisticRegressionModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32SC1);
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32FC1
 	for (int i = 0; i < testFeatures.rows; i++) {
 		cv::Mat sample = testFeatures.row(i);
 		float predict = logisticRegression->predict(sample);
-		predicted.at<int>(i, (int)predict) = 1.0f;
+		predicted.at<float>(i, (int)predict) = 1.0f; // predicted.at<int>(i, (int)predict) = 1.0f;
 	}
 
 	float accuracy = computeAccuracy(predicted, testLabels);
@@ -294,7 +294,7 @@ float computeAccuracy(cv::Mat predicted, cv::Mat actual) {
 		for (int j = 0; j < predicted.cols; ++j)
 		{
 			// Il valore della label predetta alla riga i-esima della j-esima colonna.
-			float value = predicted.at<int>(i, j); // float value = predicted.at<float>(i, j); loro versione
+			float value = predicted.at<float>(i, j); // float value = predicted.at<int>(i, j);
 			// Se il valore è maggiore.
 			if (value > max)
 			{

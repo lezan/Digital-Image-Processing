@@ -116,6 +116,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BOWKmajorityTrainer.cpp" />
     <ClCompile Include="facialComponents.cpp" />
     <ClCompile Include="facialExpression.cpp" />
     <ClCompile Include="featureExtraction.cpp" />
@@ -124,6 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="baseDef.h" />
+    <ClInclude Include="BOWKmajorityTrainer.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="facialComponents.h" />
     <ClInclude Include="facialExpression.h" />

@@ -4,6 +4,7 @@
 #include <opencv2\highgui\highgui.hpp>
 #include <opencv2\objdetect\objdetect.hpp>
 
+#include "BowKMajorityTrainer.h"
 #include "baseDef.h"
 
 void featureExtraction(std::string featuresExtractionAlgorithm);

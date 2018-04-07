@@ -298,9 +298,11 @@ int main(int argc, char* argv[])
 			std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 		}
 
-		//std::string featuresExtractor = "sift"; // Not "free".
+		// Float
+		std::string featuresExtractor = "sift"; // Not "free".
 		//std::string featuresExtractor = "surf"; // Not "free".
-		std::string featuresExtractor = "kaze";
+		//std::string featuresExtractor = "kaze";
+		//std::string featuresExtractor = "daisy";
 
 		/*
 		you CANNOT use binary descriptors, like ORB,BRISK or BRIEF with BoW, it's only possible with float descriptors like SIFT,SURF or KAZE.
@@ -309,8 +311,8 @@ int main(int argc, char* argv[])
 		@berak
 		*/
 
+		// Binary
 		//std::string featuresExtractor = "brisk";
-		//std::string featuresExtractor = "daisy";
 		//std::string featuresExtractor = "orb";
 
 		if (FEATURES_COMPONENTS_DO)
