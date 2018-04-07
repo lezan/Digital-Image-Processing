@@ -1,30 +1,13 @@
 #include "facialExpression.h"
 
-/*
-
-argv[1] : facial method
-	-> default : cascade;
-	-> cascade : cascade;
-	-> hog : hog;
-argv[2] : histogram type
-	-> default : null;
-	-> hist : histogram;
-	-> clahe : clahe;
-argv[3] : if duplication of dataset
-	-> default: no;
-	-> 0 : no;
-	-> 1 : yes;
-
-*/
-
 int main(int argc, char* argv[])
 {
 
-	std::string facialMethod; // cascade o hog
-	std::string histType; //hist o clahe
+	std::string facialMethod;
+	std::string histType;
 	std::string roi;
 	bool landmark;
-	std::string cascadeChose; // 0 -> default, 1 -> alt, 2 -> alt2
+	std::string cascadeChose;
 	std::string tempString;
 
 	std::cout <<
@@ -315,10 +298,17 @@ int main(int argc, char* argv[])
 			std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 		}
 
-		std::string featuresExtractor = "sift";
-		//std::string featuresExtractor = "surf";
-		//std::string featuresExtractor = "kaze";
-		// Non funzionano // 
+		//std::string featuresExtractor = "sift"; // Not "free".
+		//std::string featuresExtractor = "surf"; // Not "free".
+		std::string featuresExtractor = "kaze";
+
+		/*
+		you CANNOT use binary descriptors, like ORB,BRISK or BRIEF with BoW, it's only possible with float descriptors like SIFT,SURF or KAZE.
+		to use ORB or similar, it would need KMajority or KMedian clustering, not implemented in opencv.
+		again, if you want to use a "free" descriptor for this, try again with KAZE (and the FlannBasedMatcher).
+		@berak
+		*/
+
 		//std::string featuresExtractor = "brisk";
 		//std::string featuresExtractor = "daisy";
 		//std::string featuresExtractor = "orb";

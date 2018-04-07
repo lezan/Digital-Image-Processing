@@ -104,11 +104,6 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
 
-		/*if (!featuresExtractionAlgorithm.compare("brisk") || !featuresExtractionAlgorithm.compare("daisy") || !featuresExtractionAlgorithm.compare("orb"))
-		{
-			featuresExtracted.convertTo(featuresExtracted, CV_32F);
-		}*/
-
 		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Spefico l'immagine e il nome dell'"estrattore".
 		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
 		// Le righe rappresentanto il numero di features estratte per quell'immagine, cioè i keypoints.
