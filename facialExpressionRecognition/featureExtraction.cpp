@@ -15,19 +15,12 @@ cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 	cv::FileStorage fsPca(pcaFile, cv::FileStorage::READ);
 
 	cv::Mat image = imread(inputFolder + "/" + "imageTempROI.tiff", CV_LOAD_IMAGE_GRAYSCALE);
-	//cv::Mat image = imread(inputFolder + "/" + "imageTempROI_alt.tiff", CV_LOAD_IMAGE_GRAYSCALE);
-	//cv::Mat imageAlt = imread(inputFolder + "/" + "imageTempROI_alt.tiff", CV_LOAD_IMAGE_GRAYSCALE);
 
 	cv::resize(image, image, Size(80, 80));
-	//cv::resize(imageAlt, imageAlt, Size(80, 80));
 
 	cv::Mat featuresVector;
 	cv::Mat featuresExtracted = runExtractFeature(image, featuresExtractionAlgorithm);
 	featuresVector.push_back(featuresExtracted);
-
-	//cv::Mat featuresVectorAlt;
-	//cv::Mat featuresExtractedAlt = runExtractFeature(imageAlt, featuresExtractionAlgorithm);
-	//featuresVectorAlt.push_back(featuresExtractedAlt);
 
 	int numberImages = 1;
 
@@ -41,28 +34,28 @@ cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 
 	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> detector = cv::xfeatures2d::SiftFeatureDetector::create();
 
-	int dictionarySize = dictionary.rows;
+int dictionarySize = dictionary.rows;
 
-	cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, dictionarySize, CV_32FC1);
+cv::Mat featuresDataOverBins = cv::Mat::zeros(numberImages, dictionarySize, CV_32FC1);
 
-	std::vector<cv::KeyPoint> keypoints;
-	detector->detect(image, keypoints);
-	cv::Mat bowDescriptors;
-	bowDE.compute(image, keypoints, bowDescriptors);
+std::vector<cv::KeyPoint> keypoints;
+detector->detect(image, keypoints);
+cv::Mat bowDescriptors;
+bowDE.compute(image, keypoints, bowDescriptors);
 
-	bowDescriptors.copyTo(featuresDataOverBins);
+bowDescriptors.copyTo(featuresDataOverBins);
 
-	cv::PCA pca;
+cv::PCA pca;
 
-	pca.read(fsPca.root());
+pca.read(fsPca.root());
 
-	int featureSize = pca.eigenvectors.rows;
-	cv::Mat feature;
-	for (int i = 0; i < numberImages; ++i) {
-		feature = pca.project(featuresDataOverBins.row(i));
-	}
+int featureSize = pca.eigenvectors.rows;
+cv::Mat feature;
+for (int i = 0; i < numberImages; ++i) {
+	feature = pca.project(featuresDataOverBins.row(i));
+}
 
-	return feature;
+return feature;
 }
 
 void featureExtraction(std::string featuresExtractionAlgorithm)
@@ -91,6 +84,7 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	// Dichiaro il vettore che conterrà le features.
 	cv::Mat featuresVector;
 
+	// Vettore dei volti.
 	std::vector<cv::Mat> faceMatVector;
 
 	long long startKFeautesExtraction = milliseconds_now();
@@ -109,6 +103,11 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 		faceMatVector.push_back(face);
 
 		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
+
+		/*if (!featuresExtractionAlgorithm.compare("brisk") || !featuresExtractionAlgorithm.compare("daisy") || !featuresExtractionAlgorithm.compare("orb"))
+		{
+			featuresExtracted.convertTo(featuresExtracted, CV_32F);
+		}*/
 
 		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Spefico l'immagine e il nome dell'"estrattore".
 		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
@@ -133,12 +132,44 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 	fsDictionary << "dictionary" << dictionary;
 
+	cv::Ptr<cv::FeatureDetector> detector;
+	cv::Ptr<cv::DescriptorExtractor> extractor;
+
+	if (!featuresExtractionAlgorithm.compare("sift"))
+	{
+		extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+		detector = cv::xfeatures2d::SiftFeatureDetector::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("surf"))
+	{
+		extractor = cv::xfeatures2d::SurfDescriptorExtractor::create();
+		detector = cv::xfeatures2d::SurfFeatureDetector::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("kaze"))
+	{
+		extractor = cv::KAZE::create();
+		detector = cv::KAZE::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("brisk"))
+	{
+		extractor = cv::BRISK::create();
+		detector = cv::BRISK::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("daisy"))
+	{
+		extractor = cv::xfeatures2d::DAISY::create();
+		detector = cv::xfeatures2d::DAISY::create();
+	}
+	else if (!featuresExtractionAlgorithm.compare("orb"))
+	{
+		extractor = cv::ORB::create();
+		detector = cv::ORB::create();
+	}
+
 	cv::Ptr<cv::DescriptorMatcher> matcher = cv::FlannBasedMatcher::create();
-	cv::Ptr<cv::DescriptorExtractor> extractor = cv::xfeatures2d::SiftDescriptorExtractor::create();
+
 	cv::BOWImgDescriptorExtractor bowDE(extractor, matcher);
 	bowDE.setVocabulary(dictionary);
-
-	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> detector = cv::xfeatures2d::SiftFeatureDetector::create();
 
 	int numberTest = 0;
 	cv::RNG random(cv::getTickCount());
@@ -163,6 +194,7 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 		std::vector<cv::KeyPoint> keypoints;
 		detector->detect(face, keypoints);
+
 		cv::Mat bowDescriptors;
 		bowDE.compute(face, keypoints, bowDescriptors);
 
@@ -290,32 +322,47 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 cv::Mat runExtractFeature(cv::Mat image, std::string featureName) {
 	cv::Mat descriptors;
 
-	if (featureName.compare("kaze") == 0) {
+	if (!featureName.compare("kaze")) {
 		descriptors = extractFeaturesKaze(image);
 	}
-	else if (featureName.compare("sift") == 0) {
+	else if (!featureName.compare("sift")) {
 		descriptors = extractFeaturesSift(image);
 	}
-	else if (featureName.compare("surf") == 0) {
+	else if (!featureName.compare("surf")) {
 		descriptors = extractFeaturesSurf(image);
 	}
-	else if (featureName.compare("brisk") == 0) {
+	else if (!featureName.compare("brisk")) {
 		descriptors = extractFeaturesBrisk(image);
 	}
-	else if (featureName.compare("daisy") == 0) {
+	else if (!featureName.compare("daisy")) {
 		descriptors = extractFeaturesDaisy(image);
+	}
+	else if (!featureName.compare("orb")) {
+		descriptors = extractFeaturesOrb(image);
 	}
 	return descriptors;
 }
+
+/*
+cv::Mat extractFeaturesHog(cv::Mat image)
+{
+	cv::HOGDescriptor hogDescriptors;
+	std::vector<float> descriptorsValue;
+	//hogDescriptors.detect()
+	hogDescriptors.compute(image, descriptorsValue, cv::Size(8, 8), cv::Size(0, 0));
+;
+}
+*/
 
 cv::Mat extractFeaturesSift(cv::Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	//cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> sift = cv::xfeatures2d::SIFT::create();
-	cv::Ptr<cv::xfeatures2d::SiftDescriptorExtractor> sift = cv::xfeatures2d::SIFT::create();
-	sift->detect(image, keypoints, cv::Mat());
-	sift->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::xfeatures2d::SiftFeatureDetector> siftDetector = cv::xfeatures2d::SIFT::create();
+	siftDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::xfeatures2d::SiftDescriptorExtractor> siftExtractor = cv::xfeatures2d::SIFT::create();
+	siftExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }
@@ -324,10 +371,11 @@ cv::Mat extractFeaturesSurf(Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	//cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> surf = cv::xfeatures2d::SURF::create();
-	cv::Ptr<cv::xfeatures2d::SurfDescriptorExtractor> surf = cv::xfeatures2d::SURF::create();
-	surf->detect(image, keypoints, cv::Mat());
-	surf->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> surfDetector = cv::xfeatures2d::SURF::create();
+	surfDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::xfeatures2d::SurfDescriptorExtractor> surfExtractor = cv::xfeatures2d::SURF::create();	
+	surfExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }
@@ -336,9 +384,11 @@ cv::Mat extractFeaturesKaze(cv::Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::DescriptorExtractor> kaze = cv::KAZE::create();
-	kaze->detect(image, keypoints, cv::Mat());
-	kaze->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::FeatureDetector> kazeDetector = cv::KAZE::create();
+	kazeDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::DescriptorExtractor> kazeExtractor = cv::KAZE::create();	
+	kazeExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }
@@ -347,9 +397,11 @@ cv::Mat extractFeaturesBrisk(cv::Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::DescriptorExtractor> brisk = cv::BRISK::create();
-	brisk->detect(image, keypoints, cv::Mat());
-	brisk->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::FeatureDetector> briskDetector = cv::BRISK::create();
+	briskDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::DescriptorExtractor> briskExtractor = cv::BRISK::create();
+	briskExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }
@@ -358,11 +410,11 @@ cv::Mat extractFeaturesDaisy(Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::FeatureDetector> surf = cv::xfeatures2d::SURF::create();
-	surf->detect(image, keypoints, cv::Mat());
+	cv::Ptr<cv::FeatureDetector> surfDetector = cv::xfeatures2d::SURF::create();
+	surfDetector->detect(image, keypoints, cv::Mat());
 
-	cv::Ptr<cv::DescriptorExtractor> daisy = cv::xfeatures2d::DAISY::create();
-	daisy->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::DescriptorExtractor> daisyExtractor = cv::xfeatures2d::DAISY::create();
+	daisyExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }
@@ -371,9 +423,11 @@ cv::Mat extractFeaturesOrb(Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::Feature2D> fast = cv::ORB::create();
-	fast->detect(image, keypoints, cv::Mat());
-	fast->compute(image, keypoints, descriptors);
+	cv::Ptr<cv::FeatureDetector> orbDetector = cv::ORB::create();
+	orbDetector->detect(image, keypoints, cv::Mat());
+
+	cv::Ptr<cv::DescriptorExtractor> orbExtractor = cv::ORB::create();
+	orbExtractor->compute(image, keypoints, descriptors);
 
 	return descriptors;
 }

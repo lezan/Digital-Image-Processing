@@ -316,6 +316,12 @@ int main(int argc, char* argv[])
 		}
 
 		std::string featuresExtractor = "sift";
+		//std::string featuresExtractor = "surf";
+		//std::string featuresExtractor = "kaze";
+		// Non funzionano // 
+		//std::string featuresExtractor = "brisk";
+		//std::string featuresExtractor = "daisy";
+		//std::string featuresExtractor = "orb";
 
 		if (FEATURES_COMPONENTS_DO)
 		{
