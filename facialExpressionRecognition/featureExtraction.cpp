@@ -218,18 +218,26 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	}
 
 	// Float
-	cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	//cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
 
 	// Binary
-	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::BFMatcher::create(NORM_HAMMING, true);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING2);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
+	//cv::Ptr<cv::DescriptorMatcher> matcherFlannLSH = new cv::FlannBasedMatcher(new cv::flann::LshIndexParams(20, 10, 2));
+	cv::Ptr<cv::flann::IndexParams> indexParams = cv::makePtr<cv::flann::LshIndexParams>(20, 15, 2);
+	cv::Ptr<DescriptorMatcher> matcherFlannLSH = makePtr<cv::FlannBasedMatcher>(indexParams);
 
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	// Float
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+
+	// Binary
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlannLSH);
+
 	bowDE.setVocabulary(dictionary);
 
 	int numberTest = 0;
