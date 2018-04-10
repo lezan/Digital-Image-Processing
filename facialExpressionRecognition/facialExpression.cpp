@@ -299,7 +299,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Float
-		//std::string featuresExtractor = "sift"; // Not "free".
+		std::string featuresExtractor = "sift"; // Not "free".
 		//std::string featuresExtractor = "surf"; // Not "free".
 		//std::string featuresExtractor = "kaze";
 		//std::string featuresExtractor = "daisy";
@@ -313,7 +313,7 @@ int main(int argc, char* argv[])
 
 		// Binary
 		//std::string featuresExtractor = "brisk";
-		std::string featuresExtractor = "orb";
+		//std::string featuresExtractor = "orb";
 
 		if (FEATURES_COMPONENTS_DO)
 		{
@@ -414,11 +414,11 @@ int main(int argc, char* argv[])
 						roiInRun = "roialt";
 					}
 				}
-				else if (!tempString.compare("chip"))
+				else if (!tempStringInRun.compare("chip"))
 				{
 					roiInRun = "chip";
 				}
-				else if (!tempString.compare("default"))
+				else if (!tempStringInRun.compare("default"))
 				{
 					roiInRun = "roi";
 				}

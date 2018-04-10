@@ -61,18 +61,18 @@ cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 	}
 
 	// Float
-	//cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
 
 	// Binary
-	cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING2);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
 
-	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
 	bowDE.setVocabulary(dictionary);
 
 	int dictionarySize = dictionary.rows;
@@ -123,37 +123,7 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	in["number_of_image"] >> numberImages;
 
 	// Dichiaro il vettore che conterrà le features.
-	cv::Mat featuresVector;
-
-	// Vettore dei volti.
-	std::vector<cv::Mat> faceMatVector;
-
-	long long startKFeautesExtraction = milliseconds_now();
-
-	// Itero per tutte le immagini individuate e salvate in facialComponents
-	for (int i = 0; i < numberImages; ++i)
-	{
-		// Scrivo in facePath i path alle immagini individuate in facialComponents.
-		std::string facePath;
-		in["image_" + std::to_string(i) + "_face"] >> facePath;
-
-		// Carico l'immagine e la salvo in face.
-		cv::Mat face = cv::imread(facePath, CV_LOAD_IMAGE_GRAYSCALE);
-		resize(face, face, Size(80, 80));
-
-		faceMatVector.push_back(face);
-
-		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
-
-		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Spefico l'immagine e il nome dell'"estrattore".
-		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
-		// Le righe rappresentanto il numero di features estratte per quell'immagine, cioè i keypoints.
-		// Le colonne sono un numero fisso, 128, dovuto all'implementazione con OpenCV (bin usati) e rappresentano i descriptors.
-		featuresVector.push_back(featuresExtracted);
-	}
-
-	long long elapsedFeaturesExtraction = milliseconds_now() - startKFeautesExtraction;
-	cout << "Time elapsed for extraction: " << elapsedFeaturesExtraction / 1000 << "s." << endl;
+	std::vector<cv::Mat> featuresVector;
 
 	int dictionarySize = 1000;
 	cv::TermCriteria termCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 100, 1.0);
@@ -173,13 +143,34 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 		bowTrainer = cv::makePtr<BOWKmajorityTrainer>(dictionarySize, maxIterations);
 	}
 
-	//cv::BOWKMeansTrainer bowTrainer(dictionarySize, termCriteria, retries, centersFlags);
+	long long startKFeautesExtraction = milliseconds_now();
 
-	bowTrainer->add(featuresVector);
-	//bowTrainer.add(featuresVector);
+	// Itero per tutte le immagini individuate e salvate in facialComponents
+	for (int i = 0; i < numberImages; ++i)
+	{
+		// Scrivo in facePath i path alle immagini individuate in facialComponents.
+		std::string facePath;
+		in["image_" + std::to_string(i) + "_face"] >> facePath;
+
+		// Carico l'immagine e la salvo in face.
+		cv::Mat face = cv::imread(facePath, CV_LOAD_IMAGE_GRAYSCALE);
+		resize(face, face, Size(80, 80));
+
+		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
+
+		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Spefico l'immagine e il nome dell'"estrattore".
+		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
+		// Le righe rappresentanto il numero di features estratte per quell'immagine, cioè i keypoints.
+		// Le colonne sono un numero fisso, 128, dovuto all'implementazione con OpenCV (bin usati) e rappresentano i descriptors.
+		featuresVector.push_back(featuresExtracted);
+
+		bowTrainer->add(featuresExtracted);
+	}
+
+	long long elapsedFeaturesExtraction = milliseconds_now() - startKFeautesExtraction;
+	cout << "Time elapsed for extraction: " << elapsedFeaturesExtraction / 1000 << "s." << endl;
 
 	cv::Mat dictionary = bowTrainer->cluster();
-	//cv::Mat dictionary = bowTrainer.cluster();
 
 	fsDictionary << "dictionary" << dictionary;
 
@@ -218,25 +209,25 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	}
 
 	// Float
-	//cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
 
 	// Binary
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::BFMatcher::create(NORM_HAMMING, true);
-	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING2);
+	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
 	//cv::Ptr<cv::DescriptorMatcher> matcherFlannLSH = new cv::FlannBasedMatcher(new cv::flann::LshIndexParams(20, 10, 2));
-	cv::Ptr<cv::flann::IndexParams> indexParams = cv::makePtr<cv::flann::LshIndexParams>(20, 15, 2);
-	cv::Ptr<DescriptorMatcher> matcherFlannLSH = makePtr<cv::FlannBasedMatcher>(indexParams);
+	//cv::Ptr<cv::flann::IndexParams> indexParams = cv::makePtr<cv::flann::LshIndexParams>(20, 15, 2);
+	//cv::Ptr<DescriptorMatcher> matcherFlannLSH = makePtr<cv::FlannBasedMatcher>(indexParams);
 
 	// Float
-	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
 
 	// Binary
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlannLSH);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlannLSH);
 
 	bowDE.setVocabulary(dictionary);
 
@@ -259,13 +250,10 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 	for (int i = 0; i < numberImages; ++i)
 	{
-		cv::Mat face = faceMatVector[i];
-
-		std::vector<cv::KeyPoint> keypoints;
-		detector->detect(face, keypoints);
+		cv::Mat descriptors = featuresVector[i];
 
 		cv::Mat bowDescriptors;
-		bowDE.compute(face, keypoints, bowDescriptors);
+		bowDE.compute(descriptors, bowDescriptors);
 
 		// Prendo il path dell'attuale immagine che sto processando dal solito file.
 		std::string path;
