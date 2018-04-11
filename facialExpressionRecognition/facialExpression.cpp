@@ -299,7 +299,7 @@ int main(int argc, char* argv[])
 		}
 
 		// Float
-		std::string featuresExtractor = "sift"; // Not "free".
+		//std::string featuresExtractor = "sift"; // Not "free".
 		//std::string featuresExtractor = "surf"; // Not "free".
 		//std::string featuresExtractor = "kaze";
 		//std::string featuresExtractor = "daisy";
@@ -312,7 +312,7 @@ int main(int argc, char* argv[])
 		*/
 
 		// Binary
-		//std::string featuresExtractor = "brisk";
+		std::string featuresExtractor = "brisk";
 		//std::string featuresExtractor = "orb";
 
 		if (FEATURES_COMPONENTS_DO)
