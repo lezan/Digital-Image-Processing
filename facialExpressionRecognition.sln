@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2002
+VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "facialExpressionRecognition", "facialExpressionRecognition\facialExpressionRecognition.vcxproj", "{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "facialExpressionRecognition", "facialExpressionRecognition\facialExpressionRecognition.vcxproj", "{DF894FB7-3336-4D98-B715-612E6E2B2F17}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,19 +13,19 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Debug|x64.ActiveCfg = Debug|x64
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Debug|x64.Build.0 = Debug|x64
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Debug|x86.ActiveCfg = Debug|Win32
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Debug|x86.Build.0 = Debug|Win32
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Release|x64.ActiveCfg = Release|x64
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Release|x64.Build.0 = Release|x64
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Release|x86.ActiveCfg = Release|Win32
-		{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}.Release|x86.Build.0 = Release|Win32
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Debug|x64.ActiveCfg = Debug|x64
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Debug|x64.Build.0 = Debug|x64
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Debug|x86.ActiveCfg = Debug|Win32
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Debug|x86.Build.0 = Debug|Win32
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Release|x64.ActiveCfg = Release|x64
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Release|x64.Build.0 = Release|x64
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Release|x86.ActiveCfg = Release|Win32
+		{DF894FB7-3336-4D98-B715-612E6E2B2F17}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {F153188B-8DDD-46E3-8A98-0733995B9CC2}
+		SolutionGuid = {9A2163F2-B860-401A-A2A9-D45A0DBB4A19}
 	EndGlobalSection
 EndGlobal

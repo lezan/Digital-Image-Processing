@@ -5,18 +5,22 @@
 #include <dlib/dnn.h>
 #include <dlib/image_io.h>
 #include <opencv2/core.hpp>
-#include <opencv2\imgproc\imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/objdetect.hpp>
+#include "opencv2/cudaobjdetect.hpp"
+#include "opencv2/cudaimgproc.hpp"
+#include "opencv2/cudawarping.hpp"
 
 #include "baseDef.h"
 
 using namespace dlib;
 
-void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool landmark, std::string cascadeChose);
+void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose);
 std::vector<std::string> getListFile(std::string directory);
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r);
 static dlib::rectangle openCVRectToDlib(cv::Rect r);
+bool checkCudaAvailable();
 
 template <long num_filters, typename SUBNET> using con5d = con<num_filters, 5, 5, 2, 2, SUBNET>;
 template <long num_filters, typename SUBNET> using con5 = con<num_filters, 5, 5, 1, 1, SUBNET>;

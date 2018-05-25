@@ -1,5 +1,7 @@
 #include "trainClassifier.h"
 
+// http://dlib.net/multiclass_classification_ex.cpp.html
+
 float runClassifier(std::string algorithmName, std::string inputFeatures, std::string outputFolder)
 {
 	// Si apre il file in cui sono contenute le informazioni riguardo le features.
@@ -81,6 +83,10 @@ float runClassifier(std::string algorithmName, std::string inputFeatures, std::s
 	{
 		accuracy = svmClassifier(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
 	}
+	else if (!algorithmName.compare("svmDlib"))
+	{
+		accuracy = svmClassifierDlib(numbersLabel, trainFeatures, trainLabels, testFeatures, testLabels);
+	}
 	else if (!algorithmName.compare("knn"))
 	{
 		int numberMaximumNeighbors = 2;
@@ -104,6 +110,38 @@ float runClassifier(std::string algorithmName, std::string inputFeatures, std::s
 	in.release();
 
 	return accuracy;
+}
+
+float svmClassifierDlib(int numbersLabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+{
+	/*typedef dlib::matrix<float, 7, 1> sample_type;
+	typedef dlib::one_vs_one_trainer<dlib::any_trainer<sample_type> > ovo_trainer;
+	ovo_trainer trainer;
+	typedef dlib::polynomial_kernel<sample_type> poly_kernel;
+	dlib::svm_nu_trainer<poly_kernel> poly_trainer;
+	poly_trainer.set_kernel(poly_kernel(0.1, 1, 7));
+	trainer.set_trainer(poly_trainer);
+
+	std::vector<sample_type> samples;
+	std::vector<sample_type> train;
+	std::vector<sample_type> test;
+	std::vector<float> labels;
+	std::vector<float> labels1;
+	std::vector<float> labels2;
+
+	train.assign((sample_type*)trainFeatures.datastart, (sample_type*)trainFeatures.dataend);
+	test.assign((sample_type*)testFeatures.datastart, (sample_type*)testFeatures.dataend);
+	std::merge(train.begin(), train.end(), test.begin(), test.end(), samples.begin());
+
+	labels1.assign((int*)trainLabels.datastart, (int*)trainLabels.dataend);
+	labels2.assign((int*)testLabels.datastart, (int*)testLabels.dataend);
+	std::merge(labels1.begin(), labels1.end(), labels2.begin(), labels2.end(), labels.begin());
+
+	cout << "cross validation: \n" << dlib::cross_validate_multiclass_trainer(trainer, samples, labels, 5) << endl;
+	dlib::one_vs_one_decision_function<ovo_trainer> df = trainer.train(trainFeatures, trainLabels);
+	cout << "predicted label: " << df(samples[0]) << ", true label: " << labels[0] << endl;
+	*/
+	return 1.0;
 }
 
 float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
@@ -137,7 +175,7 @@ float svmClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 	return accuracy;
 }
 
-float knnClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels, int k)
+float knnClassifier(int numbersLabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels, int k)
 {
 	cv::Ptr<ml::KNearest> knn = ml::KNearest::create();
 	cv::Ptr<ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
@@ -147,7 +185,7 @@ float knnClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 
 	knn->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameKnnModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numbersLabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++)
 	{
 		cv::Mat sample = testFeatures.row(i);
@@ -166,7 +204,7 @@ float knnClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels
 	return accuracy;
 }
 
-float bayesClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels) 
+float bayesClassifier(int numbersLabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels) 
 {
 	cv::Ptr<cv::ml::NormalBayesClassifier> bayes = cv::ml::NormalBayesClassifier::create();
 	cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
@@ -174,14 +212,14 @@ float bayesClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabe
 
 	bayes->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameBayesModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numbersLabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++)
 	{
 		cv::Mat sample = testFeatures.row(i);
 		cv::Mat output, outputProb;
 		bayes->predictProb(sample, output, outputProb);
 
-		predicted.at<float>(i, output.at<unsigned int>(0, 0)) = 1.0f; // predicted.at<int>(i, output.at<unsigned int>(0, 0)) = 1.0f;
+		predicted.at<float>(i, output.at<int>(0, 0)) = 1.0f; // predicted.at<float>(i, output.at<unsigned int>(0, 0)) = 1.0f;
 
 		/*
 		float predict = bayes->predict(sample);
@@ -194,7 +232,7 @@ float bayesClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabe
 	return accuracy;
 }
 
-float randomForestClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+float randomForestClassifier(int numbersLabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
 {
 	cv::Ptr<cv::ml::RTrees> randomForest = cv::ml::RTrees::create();
 	cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
@@ -202,7 +240,7 @@ float randomForestClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat tr
 
 	randomForest->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameRandomForestModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32SC1
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numbersLabel, CV_32FC1); // CV_32SC1
 	for (int i = 0; i < testFeatures.rows; i++) {
 		cv::Mat sample = testFeatures.row(i);
 		float predict = randomForest->predict(sample);
@@ -214,7 +252,7 @@ float randomForestClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat tr
 	return accuracy;
 }
 
-float logisticRegressionClassifier(int numberslabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
+float logisticRegressionClassifier(int numbersLabel, cv::Mat trainFeatures, cv::Mat trainLabels, cv::Mat testFeatures, cv::Mat testLabels)
 {
 	cv::Ptr<cv::ml::LogisticRegression> logisticRegression = cv::ml::LogisticRegression::create();
 	//cv::Ptr<cv::ml::TrainData> trainData = cv::ml::TrainData::create(trainFeatures, cv::ml::SampleTypes::ROW_SAMPLE, trainLabels);
@@ -233,7 +271,7 @@ float logisticRegressionClassifier(int numberslabel, cv::Mat trainFeatures, cv::
 
 	logisticRegression->save(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameLogisticRegressionModelTrained);
 
-	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numberslabel, CV_32FC1); // CV_32FC1
+	cv::Mat predicted = cv::Mat::zeros(testLabels.rows, numbersLabel, CV_32FC1); // CV_32FC1
 	for (int i = 0; i < testFeatures.rows; i++) {
 		cv::Mat sample = testFeatures.row(i);
 		float predict = logisticRegression->predict(sample);

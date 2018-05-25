@@ -158,7 +158,7 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 
 		cv::Mat featuresExtracted = runExtractFeature(face, featuresExtractionAlgorithm);
 
-		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Spefico l'immagine e il nome dell'"estrattore".
+		// Inserisco nel vettore delle features le features che ho individuato con la funzione runExtractFeature. Specifico l'immagine e il nome dell'"estrattore".
 		// Ogni elemento del vettore featuresVector contiene una matrice di dimensioni <keypoints>X128.
 		// Le righe rappresentanto il numero di features estratte per quell'immagine, cioè i keypoints.
 		// Le colonne sono un numero fisso, 128, dovuto all'implementazione con OpenCV (bin usati) e rappresentano i descriptors.
@@ -209,7 +209,7 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	}
 
 	// Float
-	//cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
+	cv::Ptr<cv::DescriptorMatcher> matcherFlann = cv::FlannBasedMatcher::create();
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceL2 = makePtr<BFMatcher>(NORM_L2);
 
 	// Binary
@@ -217,17 +217,17 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = makePtr<BFMatcher>(NORM_HAMMING);
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create("BruteForce-Hamming(2)");
 	//cv::Ptr<cv::DescriptorMatcher> matcherBruteForceHamming = cv::DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE_HAMMING);
-	cv::Ptr<cv::DescriptorMatcher> matcherFlannLSH = new cv::FlannBasedMatcher(new cv::flann::LshIndexParams(20, 10, 2));
+	//cv::Ptr<cv::DescriptorMatcher> matcherFlannLSH = new cv::FlannBasedMatcher(new cv::flann::LshIndexParams(20, 10, 2));
 	//cv::Ptr<cv::flann::IndexParams> indexParams = cv::makePtr<cv::flann::LshIndexParams>(20, 10, 2);
 	//cv::Ptr<DescriptorMatcher> matcherFlannLSH = makePtr<cv::FlannBasedMatcher>(indexParams);
 
 	// Float
-	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
+	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlann);
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceL2);
 
 	// Binary
 	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherBruteForceHamming);
-	cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlannLSH);
+	//cv::BOWImgDescriptorExtractor bowDE(extractor, matcherFlannLSH);
 
 	bowDE.setVocabulary(dictionary);
 
@@ -376,7 +376,8 @@ void featureExtraction(std::string featuresExtractionAlgorithm)
 }
 
 // Loader per gli "estrattori" di features.
-cv::Mat runExtractFeature(cv::Mat image, std::string featureName) {
+cv::Mat runExtractFeature(cv::Mat image, std::string featureName)
+{
 	cv::Mat descriptors;
 
 	if (!featureName.compare("kaze")) {
@@ -400,17 +401,6 @@ cv::Mat runExtractFeature(cv::Mat image, std::string featureName) {
 	return descriptors;
 }
 
-/*
-cv::Mat extractFeaturesHog(cv::Mat image)
-{
-	cv::HOGDescriptor hogDescriptors;
-	std::vector<float> descriptorsValue;
-	//hogDescriptors.detect()
-	hogDescriptors.compute(image, descriptorsValue, cv::Size(8, 8), cv::Size(0, 0));
-;
-}
-*/
-
 cv::Mat extractFeaturesSift(cv::Mat image) {
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
@@ -424,20 +414,49 @@ cv::Mat extractFeaturesSift(cv::Mat image) {
 	return descriptors;
 }
 
-cv::Mat extractFeaturesSurf(Mat image) {
+cv::Mat extractFeaturesSurf(cv::Mat image)
+{
 	cv::Mat descriptors;
-	std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> surfDetector = cv::xfeatures2d::SURF::create();
-	surfDetector->detect(image, keypoints, cv::Mat());
+	//if (cv::cuda::getCudaEnabledDeviceCount() == 0)
+	//{
+		std::vector<cv::KeyPoint> keypoints;
 
-	cv::Ptr<cv::xfeatures2d::SurfDescriptorExtractor> surfExtractor = cv::xfeatures2d::SURF::create();	
-	surfExtractor->compute(image, keypoints, descriptors);
+		cv::Ptr<cv::xfeatures2d::SurfFeatureDetector> surfDetector = cv::xfeatures2d::SURF::create();
+		surfDetector->detect(image, keypoints, cv::Mat());
+
+		cv::Ptr<cv::xfeatures2d::SurfDescriptorExtractor> surfExtractor = cv::xfeatures2d::SURF::create();
+		surfExtractor->compute(image, keypoints, descriptors);
+	/*}
+	else
+	{
+		cv::cuda::GpuMat imageGPU;
+		imageGPU.upload(image);
+		cv::cuda::SURF_CUDA surf(100, 2, 2, true, 0.01f, false);
+		cv::cuda::GpuMat keypoints;
+		cv::cuda::GpuMat descriptorsGPU;
+		std::vector<float> descriptors;
+
+		surf(imageGPU, cv::cuda::GpuMat(), keypoints, descriptorsGPU);
+		surf.downloadDescriptors(descriptorsGPU, descriptors);
+	}*/
 
 	return descriptors;
 }
 
-cv::Mat extractFeaturesKaze(cv::Mat image) {
+cv::Mat extractFeaturesSurfDlib(cv::Mat image) {
+	cv::Mat descriptors;
+	dlib::cv_image<uchar> imageDlib(image);
+	std::vector<dlib::surf_point> surfPoint = dlib::get_surf_points(imageDlib);
+	for (int i = 0; i < surfPoint.size(); ++i)
+	{
+		descriptors.push_back(dlib::toMat(surfPoint[i].des));
+	}
+	return descriptors;
+}
+
+cv::Mat extractFeaturesKaze(cv::Mat image)
+{
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -450,7 +469,8 @@ cv::Mat extractFeaturesKaze(cv::Mat image) {
 	return descriptors;
 }
 
-cv::Mat extractFeaturesDaisy(Mat image) {
+cv::Mat extractFeaturesDaisy(cv::Mat image)
+{
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -463,7 +483,8 @@ cv::Mat extractFeaturesDaisy(Mat image) {
 	return descriptors;
 }
 
-cv::Mat extractFeaturesBrisk(cv::Mat image) {
+cv::Mat extractFeaturesBrisk(cv::Mat image)
+{
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -476,7 +497,8 @@ cv::Mat extractFeaturesBrisk(cv::Mat image) {
 	return descriptors;
 }
 
-cv::Mat extractFeaturesOrb(Mat image) {
+cv::Mat extractFeaturesOrb(cv::Mat image)
+{
 	cv::Mat descriptors;
 	std::vector<cv::KeyPoint> keypoints;
 

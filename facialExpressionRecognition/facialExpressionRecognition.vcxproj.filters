@@ -7,7 +7,7 @@
     </Filter>
     <Filter Include="File di intestazione">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
     <Filter Include="File di risorse">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
@@ -15,13 +15,42 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="baseDef.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="BOWKmajorityTrainer.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="facialComponents.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="facialExpression.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="featureExtraction.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="trainClassifier.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+    <ClInclude Include="utilityFunction.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BOWKmajorityTrainer.cpp">
+      <Filter>File di origine</Filter>
+    </ClCompile>
+    <ClCompile Include="facialComponents.cpp">
+      <Filter>File di origine</Filter>
+    </ClCompile>
     <ClCompile Include="facialExpression.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
     <ClCompile Include="featureExtraction.cpp">
-      <Filter>File di origine</Filter>
-    </ClCompile>
-    <ClCompile Include="facialComponents.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
     <ClCompile Include="trainClassifier.cpp">
@@ -30,42 +59,5 @@
     <ClCompile Include="utilityFunction.cpp">
       <Filter>File di origine</Filter>
     </ClCompile>
-    <ClCompile Include="BOWKmajorityTrainer.cpp">
-      <Filter>File di origine</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="featureExtraction.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="facialComponents.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="trainClassifier.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="facialExpression.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="baseDef.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="dirent.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="utilityFunction.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-    <ClInclude Include="BOWKmajorityTrainer.h">
-      <Filter>File di intestazione</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="facialExpressionRecognition.rc">
-      <Filter>File di risorse</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

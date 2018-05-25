@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{3F38A25D-AA08-4F73-90AE-4C0DC9493D01}</ProjectGuid>
+    <ProjectGuid>{DF894FB7-3336-4D98-B715-612E6E2B2F17}</ProjectGuid>
     <RootNamespace>facialExpressionRecognition</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -50,7 +50,6 @@
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -67,11 +66,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="OPENCV3_DEBUG.props" />
     <Import Project="DLIB_DEBUG.props" />
+    <Import Project="CUDA_DEBUG.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="OPENCV3_RELEASE.props" />
     <Import Project="DLIB_RELEASE.props" />
+    <Import Project="CUDA_RELEASE.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -80,6 +81,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -87,6 +89,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -96,6 +99,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -109,6 +113,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -116,26 +121,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BOWKmajorityTrainer.cpp" />
-    <ClCompile Include="facialComponents.cpp" />
-    <ClCompile Include="facialExpression.cpp" />
-    <ClCompile Include="featureExtraction.cpp" />
-    <ClCompile Include="trainClassifier.cpp" />
-    <ClCompile Include="utilityFunction.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="baseDef.h" />
     <ClInclude Include="BOWKmajorityTrainer.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="facialComponents.h" />
     <ClInclude Include="facialExpression.h" />
     <ClInclude Include="featureExtraction.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="trainClassifier.h" />
     <ClInclude Include="utilityFunction.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="facialExpressionRecognition.rc" />
+    <ClCompile Include="BOWKmajorityTrainer.cpp" />
+    <ClCompile Include="facialComponents.cpp" />
+    <ClCompile Include="facialExpression.cpp" />
+    <ClCompile Include="featureExtraction.cpp" />
+    <ClCompile Include="trainClassifier.cpp" />
+    <ClCompile Include="utilityFunction.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

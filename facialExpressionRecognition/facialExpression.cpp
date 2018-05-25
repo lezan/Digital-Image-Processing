@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 	std::string facialMethod;
 	std::string histType;
 	std::string roi;
-	bool landmark;
+	bool facePose;
 	std::string cascadeChose;
 	std::string tempString;
 
@@ -14,19 +14,19 @@ int main(int argc, char* argv[])
 		"param 1 : facial method" << endl <<
 			"\t -> default : cascade;" << endl <<
 			"\t -> cascade : cascade;" << endl <<
-			"\t -> cnn : cnn " << endl <<
+			"\t -> dnn : dnn " << endl <<
             "\t -> hog : hog;" << endl <<
         "param 2 : histogram type" << endl <<
             "\t -> default : null;" << endl <<
             "\t -> hist : histogram;" << endl <<
             "\t -> clahe : clahe;" << endl <<
-        "param 3 : roi or roialt (only with landmark)" << endl <<
+        "param 3 : roi, roialt (only with landmark) or chip (only with landmark)" << endl <<
             "\t -> default : roi;" << endl <<
             "\t -> roi : roi;" << endl <<
             "\t -> roialt : roialt;" << endl <<
 			"\t -> chip : chip;" << endl <<
-        "param 4 : if cascade want landmark" << endl <<
-            "\t -> default : yes;" << endl <<
+        "param 4 : want face pose(landmark)" << endl <<
+            "\t -> default : no;" << endl <<
             "\t -> no : no, without;" << endl <<
             "\t -> yes : yes, with landmark;" << endl <<
         "param 5 : if cascade want default cascade, alt, alt2, lbp or lbp2" << endl <<
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
         "param 6 : if duplication of dataset" << endl <<
             "\t -> default : no;" << endl <<
             "\t -> 0 : no;" << endl <<
-            "\t -> 1 : yes;" << endl;
+            "\t -> 1 : yes;" << endl << endl;
 
 	if (argc > 1)
 	{
@@ -52,9 +52,9 @@ int main(int argc, char* argv[])
 		{
 			facialMethod = "hog";
 		}
-		else if (!tempString.compare("cnn"))
+		else if (!tempString.compare("dnn"))
 		{
-			facialMethod = "cnn";
+			facialMethod = "dnn";
 		}
 		else if(!tempString.compare("default"))
 		{
@@ -71,22 +71,30 @@ int main(int argc, char* argv[])
 	{
 		tempString = argv[2];
 
-		if (!tempString.compare("hist"))
+		if (!facialMethod.compare("dnn"))
 		{
-			histType = "hist";
-		}
-		else if (!tempString.compare("clahe"))
-		{
-			histType = "clahe";
-		}
-		else if(!tempString.compare("default"))
-		{
-			histType = "";
+			histType = "default";
+			std::cout << "You chose dnn as facial method. You are forced to use null as histType." << endl;
 		}
 		else
 		{
-			histType = "";
-			std::cout << "Error histType: put a default (null)." << endl;
+			if (!tempString.compare("hist"))
+			{
+				histType = "hist";
+			}
+			else if (!tempString.compare("clahe"))
+			{
+				histType = "clahe";
+			}
+			else if (!tempString.compare("default"))
+			{
+				histType = "default";
+			}
+			else
+			{
+				histType = "default";
+				std::cout << "Error histType: put a default (null)." << endl;
+			}
 		}
 	}
 
@@ -100,15 +108,7 @@ int main(int argc, char* argv[])
 		}
 		else if (!tempString.compare("roialt"))
 		{
-			if (!facialMethod.compare("cnn"))
-			{
-				std::cout << "Error: Can not use cnn with roialt at the moment. Force to use roi." << endl;
-				roi = "roi";
-			}
-			else
-			{
-				roi = "roialt";
-			}
+			roi = "roialt";
 		}
 		else if (!tempString.compare("chip"))
 		{
@@ -125,37 +125,45 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	if (argc > 4 && !facialMethod.compare("cascade"))
+	if (argc > 4)
 	{
 		tempString = argv[4];
 		if (!tempString.compare("yes"))
 		{
-			landmark = true;
+			if (!roi.compare("roi"))
+			{
+				facePose = false;
+				std::cout << "You have selected roi as ROI. Face pose is useless in this case. Face pose disabled." << endl;
+			}
+			else
+			{
+				facePose = true;
+			}
 		}
 		else if (!tempString.compare("no"))
 		{
 			if (!roi.compare("roialt"))
 			{
-				landmark = true;
-				std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
+				facePose = true;
+				std::cout << "You can not use roialt without face pose. Force to use face pose." << endl;
 			}
 			else if (!roi.compare("chip"))
 			{
-				landmark = true;
-				std::cout << "You can not use chip without landmark. Force to use lankmark." << endl;
+				facePose = true;
+				std::cout << "You can not use chip without face pose. Force to use face pose." << endl;
 			}
 			else
 			{
-				landmark = false;
+				facePose = false;
 			}
 		}
 		else if (!tempString.compare("default"))
 		{
-			landmark = true;
+			facePose = false;
 		}
 		else
 		{
-			landmark = true;
+			facePose = false;
 			std::cout << "Error landmkar: put a default (yes)." << endl;
 		}
 	}
@@ -199,11 +207,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	std::cout << "Facial chose: " << facialMethod << endl;
+	std::cout << endl << "Facial chose: " << facialMethod << endl;
 	std::cout << "Hist chose: " << histType << endl;
 	std::cout << "ROI chose: " << roi << endl;
-	std::cout << "Landmark chose: " << landmark << endl;
-	std::cout << "XML cascade chose: " << cascadeChose << endl;
+	std::cout << "Face pose chose: " << facePose << endl;
+	std::cout << "XML cascade chose: " << cascadeChose << endl << endl;
+
+	cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
+	std::cout << endl;
 
 	if (MASS_TEST)
 	{
@@ -243,7 +254,7 @@ int main(int argc, char* argv[])
 						}
 
 						long long startFacialComponents = milliseconds_now();
-						getFace(facialMethod, histType, 0, 0, roi, landmark, cascadeChose);
+						getFace(facialMethod, histType, 0, 0, roi, facePose, cascadeChose);
 						long long elapsedFacialComponents = milliseconds_now() - startFacialComponents;
 						std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 
@@ -293,13 +304,13 @@ int main(int argc, char* argv[])
 		if (FACIAL_COMPONENTS_DO)
 		{
 			long long startFacialComponents = milliseconds_now();
-			getFace(facialMethod, histType, 0, 0, roi, landmark, cascadeChose);
+			getFace(facialMethod, histType, 0, 0, roi, facePose, cascadeChose);
 			long long elapsedFacialComponents = milliseconds_now() - startFacialComponents;
 			std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 		}
 
 		// Float
-		//std::string featuresExtractor = "sift"; // Not "free".
+		std::string featuresExtractor = "sift"; // Not "free".
 		//std::string featuresExtractor = "surf"; // Not "free".
 		//std::string featuresExtractor = "kaze";
 		//std::string featuresExtractor = "daisy";
@@ -312,7 +323,7 @@ int main(int argc, char* argv[])
 		*/
 
 		// Binary
-		std::string featuresExtractor = "brisk";
+		//std::string featuresExtractor = "brisk";
 		//std::string featuresExtractor = "orb";
 
 		if (FEATURES_COMPONENTS_DO)
@@ -341,16 +352,19 @@ int main(int argc, char* argv[])
 			std::string facialMethodInRun;
 			std::string histTypeInRun;
 			std::string roiInRun;
-			bool landmarkInRun;
+			bool facePoseInRun;
 			std::string cascadeChoseInRun;
 			std::string tempStringInRun;
 
 			std::string featuresExtractorInRun = "sift";
 
+			std::string algorithmNameInRun = algorithmName;
+
+
 			std::string c;
 			while (true)
 			{
-				std::cout << endl << "Give me facial method (cascade, hog, cnn)" << endl;
+				std::cout << endl << "Give me facial method (cascade, hog, dnn)" << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -362,9 +376,9 @@ int main(int argc, char* argv[])
 				{
 					facialMethodInRun = "hog";
 				}
-				else if (!tempStringInRun.compare("cnn"))
+				else if (!tempStringInRun.compare("dnn"))
 				{
-					facialMethodInRun = "cnn";
+					facialMethodInRun = "dnn";
 				}
 				else
 				{
@@ -376,24 +390,31 @@ int main(int argc, char* argv[])
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
-				if (!tempStringInRun.compare("hist"))
-				{
-					histTypeInRun = "hist";
-				}
-				else if (!tempStringInRun.compare("clahe"))
-				{
-					histTypeInRun = "clahe";
-				}
-				else if (!tempStringInRun.compare("default"))
+				if (!facialMethodInRun.compare("dnn"))
 				{
 					histTypeInRun = "default";
 				}
 				else
 				{
-					histTypeInRun = "default";
-					std::cout << "Error histType: put a default (null)." << endl;
+					if (!tempStringInRun.compare("hist"))
+					{
+						histTypeInRun = "hist";
+					}
+					else if (!tempStringInRun.compare("clahe"))
+					{
+						histTypeInRun = "clahe";
+					}
+					else if (!tempStringInRun.compare("default"))
+					{
+						histTypeInRun = "default";
+					}
+					else
+					{
+						histTypeInRun = "default";
+						std::cout << "Error histType: put a default (null)." << endl;
+					}
 				}
-
+				
 				std::cout << "Give me roi (roi, roialt, chip, default)" << endl;
 				std::cin.clear();
 				std::cin.sync();
@@ -404,15 +425,7 @@ int main(int argc, char* argv[])
 				}
 				else if(!tempStringInRun.compare("roialt"))
 				{
-					if (!facialMethodInRun.compare("cnn"))
-					{
-						std::cout << "Error: Can not use cnn with roialt at the moment. Force to use roi." << endl;
-						roiInRun = "roi";
-					}
-					else
-					{
-						roiInRun = "roialt";
-					}
+					roiInRun = "roialt";
 				}
 				else if (!tempStringInRun.compare("chip"))
 				{
@@ -434,33 +447,41 @@ int main(int argc, char* argv[])
 				std::getline(std::cin, tempStringInRun);
 				if (!tempStringInRun.compare("yes"))
 				{
-					landmarkInRun = true;
+					if (!roiInRun.compare("roi"))
+					{
+						facePoseInRun = false;
+						std::cout << "You have selected roi as ROI. Face pose is useless in this case. Face pose disabled." << endl;
+					}
+					else
+					{
+						facePoseInRun = true;
+					}
 				}
 				else if(!tempStringInRun.compare("no"))
 				{
 					if (!roiInRun.compare("roialt"))
 					{
-						landmarkInRun = true;
+						facePoseInRun = true;
 						std::cout << "You can not use roialt without landmark. Force to use lankmark." << endl;
 					}
 					else if (!roiInRun.compare("chip"))
 					{
-						landmarkInRun = true;
+						facePoseInRun = true;
 						std::cout << "You can not use chip without landmark. Force to use lankmark." << endl;
 					}
 					else
 					{
-						landmarkInRun = false;
+						facePoseInRun = false;
 					}
 				}
 				else if(!tempStringInRun.compare("default"))
 				{
-					landmarkInRun = true;
+					facePoseInRun = false;
 				}
 				else
 				{
-					landmarkInRun = true;
-					std::cout << "Error landmark: put a default (yes)." << endl;
+					facePoseInRun = false;
+					std::cout << "Error landmark: put a default (no)." << endl;
 				}
 
 				if (!facialMethodInRun.compare("cascade"))
@@ -503,16 +524,16 @@ int main(int argc, char* argv[])
 				std::cout << endl << "Facial chose: " << facialMethodInRun << endl;
 				std::cout << "Hist chose: " << histTypeInRun << endl;
 				std::cout << "ROI chose: " << roiInRun << endl;
-				std::cout << "Landmark chose: " << landmarkInRun << endl;
+				std::cout << "Landmark chose: " << facePoseInRun << endl;
 				std::cout << "XML cascade chose: " << cascadeChoseInRun << endl << endl;
 
 				if (sourceImage == 0) // static image
 				{
-					getFace(facialMethodInRun, histTypeInRun, 1, 0, roiInRun, landmarkInRun, cascadeChoseInRun);
+					getFace(facialMethodInRun, histTypeInRun, 1, 0, roiInRun, facePoseInRun, cascadeChoseInRun);
 				}
 				else if (sourceImage == 1) // camera image
 				{
-					getFace(facialMethodInRun, histTypeInRun, 1, 1, roiInRun, landmarkInRun, cascadeChoseInRun);
+					getFace(facialMethodInRun, histTypeInRun, 1, 1, roiInRun, facePoseInRun, cascadeChoseInRun);
 				}
 				else
 				{
@@ -522,31 +543,31 @@ int main(int argc, char* argv[])
 				cv::Mat feature = extractFeaturesFromSingleImage(featuresExtractorInRun);
 				float labelPredicted;
 
-				if (!algorithmName.compare("svm"))
+				if (!algorithmNameInRun.compare("svm"))
 				{
 					cv::Ptr<cv::ml::SVM> svm;
 					svm = cv::ml::StatModel::load<ml::SVM>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameSVMModelTrained);
 					labelPredicted = svm->predict(feature);
 				}
-				else if (!algorithmName.compare("knn"))
+				else if (!algorithmNameInRun.compare("knn"))
 				{
 					cv::Ptr<cv::ml::KNearest> knn;
 					knn = cv::ml::StatModel::load<ml::KNearest>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameKnnModelTrained);
 					labelPredicted = knn->predict(feature);
 				}
-				else if (!algorithmName.compare("bayes"))
+				else if (!algorithmNameInRun.compare("bayes"))
 				{
 					cv::Ptr<cv::ml::NormalBayesClassifier> bayes;
 					bayes = cv::ml::StatModel::load<ml::NormalBayesClassifier>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameBayesModelTrained);
 					labelPredicted = bayes->predict(feature);
 				}
-				else if (!algorithmName.compare("randomForest"))
+				else if (!algorithmNameInRun.compare("randomForest"))
 				{
 					cv::Ptr<cv::ml::RTrees> randomForest;
 					randomForest = cv::ml::StatModel::load<ml::RTrees>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameRandomForestModelTrained);
 					labelPredicted = randomForest->predict(feature);
 				}
-				else if (!algorithmName.compare("logisticRegression"))
+				else if (!algorithmNameInRun.compare("logisticRegression"))
 				{
 					cv::Ptr<cv::ml::LogisticRegression> logisticRegression;
 					logisticRegression = cv::ml::StatModel::load<ml::LogisticRegression>(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + nameLogisticRegressionModelTrained);
@@ -555,7 +576,7 @@ int main(int argc, char* argv[])
 
 				std::cout << "Label predicted is: ";
 
-				switch ((int)labelPredicted)
+				switch (static_cast<int>(labelPredicted))
 				{
 				case 0:
 					std::cout << "angry." << endl;

@@ -1,52 +1,8 @@
 #include "facialComponents.h"
 
-struct LANDMARKPOSITION
-{
-	double x;
-	double y;
-};
+// Problema dnn con la shape predictor a 68 punti https://github.com/davisking/dlib-models.
 
-LANDMARKPOSITION shape68[] =
-{
-	{0.0792396913815, 0.339223741112}, {0.0829219487236, 0.456955367943},
-	{0.0967927109165, 0.575648016728}, {0.122141515615, 0.691921601066},
-	{0.168687863544, 0.800341263616}, {0.239789390707, 0.895732504778},
-	{0.325662452515, 0.977068762493}, {0.422318282013, 1.04329000149},
-	{0.531777802068, 1.06080371126}, {0.641296298053, 1.03981924107},
-	{0.738105872266, 0.972268833998}, {0.824444363295, 0.889624082279},
-	{0.894792677532, 0.792494155836}, {0.939395486253, 0.681546643421},
-	{0.96111933829, 0.562238253072}, {0.970579841181, 0.441758925744},
-	{0.971193274221, 0.322118743967}, {0.163846223133, 0.249151738053},
-	{0.21780354657, 0.204255863861}, {0.291299351124, 0.192367318323},
-	{0.367460241458, 0.203582210627}, {0.4392945113, 0.233135599851},
-	{0.586445962425, 0.228141644834}, {0.660152671635, 0.195923841854},
-	{0.737466449096, 0.182360984545}, {0.813236546239, 0.192828009114},
-	{0.8707571886, 0.235293377042}, {0.51534533827, 0.31863546193},
-	{0.516221448289, 0.396200446263}, {0.517118861835, 0.473797687758},
-	{0.51816430343, 0.553157797772}, {0.433701156035, 0.604054457668},
-	{0.475501237769, 0.62076344024}, {0.520712933176, 0.634268222208},
-	{0.565874114041, 0.618796581487}, {0.607054002672, 0.60157671656},
-	{0.252418718401, 0.331052263829}, {0.298663015648, 0.302646354002},
-	{0.355749724218, 0.303020650651}, {0.403718978315, 0.33867711083},
-	{0.352507175597, 0.349987615384}, {0.296791759886, 0.350478978225},
-	{0.631326076346, 0.334136672344}, {0.679073381078, 0.29645404267},
-	{0.73597236153, 0.294721285802}, {0.782865376271, 0.321305281656},
-	{0.740312274764, 0.341849376713}, {0.68499850091, 0.343734332172},
-	{0.353167761422, 0.746189164237}, {0.414587777921, 0.719053835073},
-	{0.477677654595, 0.706835892494}, {0.522732900812, 0.717092275768},
-	{0.569832064287, 0.705414478982}, {0.635195811927, 0.71565572516},
-	{0.69951672331, 0.739419187253}, {0.639447159575, 0.805236879972},
-	{0.576410514055, 0.835436670169}, {0.525398405766, 0.841706377792},
-	{0.47641545769, 0.837505914975}, {0.41379548902, 0.810045601727},
-	{0.380084785646, 0.749979603086}, {0.477955996282, 0.74513234612},
-	{0.523389793327, 0.748924302636}, {0.571057789237, 0.74332894691},
-	{0.672409137852, 0.744177032192}, {0.572539621444, 0.776609286626},
-	{0.5240106503, 0.783370783245}, {0.477561227414, 0.778476346951}
-};
-
-const int INNER_EYES_AND_BOTTOM_LIP[] = { 39, 42, 57 };
-
-void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool landmark, std::string cascadeChose)
+void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose)
 {
 
 	// ***
@@ -132,23 +88,27 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	dlib::shape_predictor predictor;
 
 	cv::CascadeClassifier faceCascade;
+	Ptr<cv::cuda::CascadeClassifier> faceCascadeGpu;
 
 	net_type net;
 
-	if (!facialMethod.compare("hog") || (!facialMethod.compare("cascade") && !roi.compare("roialt")) || (!facialMethod.compare("cascade") && !roi.compare("chip")))
+	if (facialMethod.compare("dnn") && (!roi.compare("roialt") || !roi.compare("chip")))
 	{
 		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName) >> predictor;
 	}
 
-	if (!facialMethod.compare("cnn"))
+	if (!facialMethod.compare("dnn"))
 	{
-		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
-		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> net;
+		dlib::deserialize(baseDatabasePath + "/" + dnnFaceDetector) >> net;
+		if (!roi.compare("roialt") || !roi.compare("chip"))
+		{
+			dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
+		}
 	}
 
 	cv::Mat faceROI;
-	cv::Mat faceROIAlt;
-	cv::Mat faceChip;
+	//cv::Mat faceROIAlt;
+	//cv::Mat faceChip;
 
 	for (int imageId = 0; imageId < imageSize; ++imageId)
 	{
@@ -156,6 +116,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 		cv::Mat gray;
 		cv::Mat output;
 
+		// L'immagine viene caricata con un modello colore BGR.
 		image = cv::imread(imagePath[imageId], CV_LOAD_IMAGE_COLOR);
 
 		// Se l'input è l'immagine di testing ed è in una directory.
@@ -166,116 +127,168 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		cv::cvtColor(image, gray, CV_BGR2GRAY);
 
-		// Aumento dei contrasti nell'immagine.
-		if (!histType.compare("clahe"))
-		{
-			double clipLimit = 4.0f;
-			Size tileGridSize(8, 8);
-			Ptr<CLAHE> clahe = cv::createCLAHE(2.0, tileGridSize);
-			clahe->apply(gray, output);
-		}
-		else if (!histType.compare("hist"))
-		{
-			equalizeHist(gray, output);
-		}
-		else
+		if (!facialMethod.compare("dnn"))
 		{
 			gray.copyTo(output);
 		}
+		else
+		{
+			// Aumento dei contrasti nell'immagine.
+			if (!histType.compare("clahe"))
+			{
+				double clipLimit = 4.0f;
+				Size tileGridSize(8, 8);
+				Ptr<CLAHE> clahe = cv::createCLAHE(2.0, tileGridSize);
+				clahe->apply(gray, output);
+			}
+			else if (!histType.compare("hist"))
+			{
+				equalizeHist(gray, output);
+			}
+			else
+			{
+				gray.copyTo(output);
+			}
+		}
 
-		dlib::cv_image<uchar> cimg(output);
+		dlib::cv_image<uchar> outputDlib(output);
 
 		dlib::full_object_detection shape;
-
-		dlib::array2d<dlib::rgb_pixel> face_chip;
 
 		if (!facialMethod.compare("hog"))
 		{
 			detector = dlib::get_frontal_face_detector();
 			
-			std::vector<dlib::rectangle> faces = detector(cimg);
+			std::vector<dlib::rectangle> faces = detector(outputDlib);
 			if (faces.size() > 1)
 			{
 				std::cout << "ERROR: too much faces." << endl;
+				return;
 			}
 
 			if (faces.size() < 1)
 			{
 				std::cout << "ERROR: where are faces." << endl;
+				return;
 			}
-			shape = predictor(cimg, faces[0]);
 
-			if (!roi.compare("roi"))
+			if (facePose)
+			{
+				shape = predictor(outputDlib, faces[0]);
+			}
+			else
 			{
 				faceROI = output(dlibRectangleToOpenCV(faces[0]));
 			}
 		}
 		else if (!facialMethod.compare("cascade"))
 		{
-			if (!cascadeChose.compare("defaul"))
+			std::vector<cv::Rect> faces;
+			if (!checkCudaAvailable())
 			{
-				faceCascade.load(baseDatabasePath + "/" + cascadeDataName);
-			}
-			else if (!cascadeChose.compare("alt"))
-			{
-				faceCascade.load(baseDatabasePath + "/" + cascadeDataName2);
-			}
-			else if (!cascadeChose.compare("lbp"))
-			{
-				faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName);
-			}
-			else if (!cascadeChose.compare("lbp2"))
-			{
-				faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName2);
+				if (!cascadeChose.compare("default"))
+				{
+					faceCascade.load(baseDatabasePath + "/" + cascadeDataName);
+				}
+				else if (!cascadeChose.compare("alt"))
+				{
+					faceCascade.load(baseDatabasePath + "/" + cascadeDataName2);
+				}
+				else if (!cascadeChose.compare("alt2"))
+				{
+					faceCascade.load(baseDatabasePath + "/" + cascadeDataName3);
+				}
+				else if (!cascadeChose.compare("lbp"))
+				{
+					faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName);
+				}
+				else if (!cascadeChose.compare("lbp2"))
+				{
+					faceCascade.load(baseDatabasePath + "/" + cascadeLbpDataName2);
+				}
+				
+				if (faceCascade.empty())
+				{
+					return;
+				}
+
+				faceCascade.detectMultiScale(output, faces, 1.2, 3, 0 | CASCADE_SCALE_IMAGE, cv::Size(50, 50));
 			}
 			else
 			{
-				faceCascade.load(baseDatabasePath + "/" + cascadeDataName3);
-			}
+				if (!cascadeChose.compare("default"))
+				{
+					faceCascadeGpu = cv::cuda::CascadeClassifier::create(baseDatabasePath + "/" + cascadeDataNameCuda);
+				}
+				else if (!cascadeChose.compare("alt"))
+				{
+					faceCascadeGpu = cv::cuda::CascadeClassifier::create(baseDatabasePath + "/" + cascadeDataName2Cuda);
+				}
+				else if (!cascadeChose.compare("alt2"))
+				{
+					faceCascadeGpu = cv::cuda::CascadeClassifier::create(baseDatabasePath + "/" + cascadeDataName3Cuda);
+				}
+				else if (!cascadeChose.compare("lbp"))
+				{
+					faceCascadeGpu = cv::cuda::CascadeClassifier::create(baseDatabasePath + "/" + cascadeLbpDataName);
+				}
+				else if (!cascadeChose.compare("lbp2"))
+				{
+					faceCascadeGpu = cv::cuda::CascadeClassifier::create(baseDatabasePath + "/" + cascadeLbpDataName2);
+				}
+				
+				if (faceCascadeGpu->empty())
+				{
+					return;
+				}
 
-			if (faceCascade.empty())
-			{
-				return;
+				cv::cuda::GpuMat outputGpu(output);
+				cv::cuda::GpuMat facesGpu;
+				faceCascadeGpu->setFindLargestObject(true);
+				faceCascadeGpu->setScaleFactor(1.2);
+				faceCascadeGpu->setMinNeighbors(3);
+				faceCascadeGpu->setMinObjectSize(cv::Size(150, 150));
+				faceCascadeGpu->detectMultiScale(outputGpu, facesGpu);
+				faceCascadeGpu->convert(facesGpu, faces);
 			}
-
-			std::vector<cv::Rect> faces;
-			faceCascade.detectMultiScale(output, faces, 1.2, 3, 0 | CASCADE_SCALE_IMAGE, cv::Size(50, 50));
 
 			if (faces.size() > 1)
 			{
 				std::cout << "ERROR: too much faces." << endl;
+				return;
 			}
 
 			if (faces.size() < 1)
 			{
 				std::cout << "ERROR: where are faces." << endl;
+				return;
 			}
 
-			if (landmark)
+			if (facePose)
 			{
-				shape = predictor(cimg, openCVRectToDlib(faces[0]));
-				if (!roi.compare("roi"))
-				{
-					faceROI = output(faces[0]);
-				}
+				shape = predictor(outputDlib, openCVRectToDlib(faces[0]));
 			}
 			else
 			{
 				faceROI = cv::Mat(output, faces[0]);
+				//faceROI = output(faces[0]);
 			}
 
 		}
-		else if (!facialMethod.compare("cnn"))
+		else if (!facialMethod.compare("dnn"))
 		{
 			try
 			{
-				dlib::matrix<dlib::rgb_pixel> img;
-				dlib::assign_image(img, dlib::cv_image<uchar>(output));
-				std::vector<dlib::mmod_rect> dets = net(img);
+				dlib::matrix<dlib::rgb_pixel> imageDNN;
+				dlib::assign_image(imageDNN, dlib::cv_image<rgb_pixel>(image));
+				std::vector<dlib::mmod_rect> dets = net(imageDNN);
+				//std::vector<dlib::mmod_rect> dets = net(jitter_image(imageDNN));
 
-				shape = predictor(cimg, dets[0].rect);
-
-				if (!roi.compare("roi"))
+				if (facePose)
+				{
+					shape = predictor(imageDNN, dets[0].rect);
+				}
+				else
 				{
 					faceROI = output(dlibRectangleToOpenCV(dets[0].rect));
 				}
@@ -298,72 +311,58 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		if (!roi.compare("roialt"))
 		{
-			cv::Point centerEyeRight = cv::Point(
-				(shape.part(42).x() + shape.part(45).x()) / 2,
-				(shape.part(42).y() + shape.part(45).y()) / 2);
+			cv::Point centerEyeRight;
+			cv::Point centerEyeLeft;
+			int widthEyeRight;
+			int widthEyeLeft;
+			if (!facialMethod.compare("dnn"))
+			{
+				centerEyeRight = cv::Point(
+					(shape.part(1).x() + shape.part(0).x()) / 2,
+					(shape.part(1).y() + shape.part(0).y()) / 2);
 
-			cv::Point centerEyeLeft = cv::Point(
-				(shape.part(36).x() + shape.part(39).x()) / 2,
-				(shape.part(36).y() + shape.part(39).y()) / 2);
+				centerEyeLeft = cv::Point(
+					(shape.part(2).x() + shape.part(3).x()) / 2,
+					(shape.part(2).y() + shape.part(3).y()) / 2);
 
-			int widthEyeRight = abs(shape.part(42).x() - shape.part(45).x());
-			int widthEyeLeft = abs(shape.part(36).x() - shape.part(39).x());
+				widthEyeRight = abs(shape.part(1).x() - shape.part(0).x());
+				widthEyeLeft = abs(shape.part(2).x() - shape.part(3).x());
+			}
+			else {
+				centerEyeRight = cv::Point(
+					(shape.part(42).x() + shape.part(45).x()) / 2,
+					(shape.part(42).y() + shape.part(45).y()) / 2);
 
+				centerEyeLeft = cv::Point(
+					(shape.part(36).x() + shape.part(39).x()) / 2,
+					(shape.part(36).y() + shape.part(39).y()) / 2);
+
+				widthEyeRight = abs(shape.part(42).x() - shape.part(45).x());
+				widthEyeLeft = abs(shape.part(36).x() - shape.part(39).x());
+			}
 			int widthFace = (centerEyeRight.x + widthEyeRight) - (centerEyeLeft.x - widthEyeLeft);
 			widthFace *= 1.10;
 			int heightFace = widthFace * 1.1;
 
-			faceROIAlt = output(cv::Rect(centerEyeLeft.x - (widthFace / 4), centerEyeLeft.y - (heightFace / 4), widthFace, heightFace));
-
-			cv::resize(faceROIAlt, faceROIAlt, cv::Size(widthImageOutputResize, heightImageOutputResize));
-		}
-		else if (!roi.compare("roi"))
-		{
-			cv::resize(faceROI, faceROI, cv::Size(widthImageOutputResize, heightImageOutputResize));
+			faceROI = output(cv::Rect(centerEyeLeft.x - (widthFace / 4), centerEyeLeft.y - (heightFace / 4), widthFace, heightFace));
+			
 		}
 		else if (!roi.compare("chip"))
 		{
-			dlib::extract_image_chip(cimg, dlib::get_face_chip_details(shape, 160, 0), face_chip);
-			faceChip = dlib::toMat(face_chip);
+			dlib::array2d<rgb_pixel> faceChipTemp;
+			dlib::extract_image_chip(outputDlib, dlib::get_face_chip_details(shape, dimensionImageOutputResize, 0), faceChipTemp);
+			cv::Mat test;
+			test = dlib::toMat(faceChipTemp);
+
+			test.convertTo(faceROI, CV_8U);
+			cv::cvtColor(faceROI, faceROI, CV_BGR2GRAY);
 		}
 
-		/*LANDMARKPOSITION shapeMin, shapeMax;
-		shapeMin.x = 1000.0f;
-		shapeMin.y = 1000.0f;
-		shapeMax.x = -1.0f;
-		shapeMax.y = -1.0f;
-
-		for (int i = 0; i < 68; ++i)
+		if (!roi.compare("roi") || !roi.compare("roialt"))
 		{
-			if (shape68[i].x > shapeMax.x)
-			{
-				shapeMax.x = shape68[i].x;
-			}
-
-			if (shape68[i].y > shapeMax.y)
-			{
-				shapeMax.y = shape68[i].y;
-			}
-
-			if (shape68[i].x < shapeMin.x)
-			{
-				shapeMin.x = shape68[i].x;
-			}
-
-			if (shape68[i].y < shapeMin.y)
-			{
-				shapeMin.y = shape68[i].y;
-			}
+			cv::resize(faceROI, faceROI, cv::Size(widthImageOutputResize, heightImageOutputResize));
 		}
 
-		LANDMARKPOSITION minMaxShape[68];
-
-		for (int i = 0; i < 68; ++i)
-		{
-			minMaxShape[i].x = (shape68[i].x - shapeMin.x) / (shapeMax.x - shapeMin.x);
-			minMaxShape[i].y = (shape68[i].y - shapeMin.y) / (shapeMax.y - shapeMin.y);
-		}*/
-		
 		std::string currentFilename;
 		try
 		{
@@ -372,39 +371,14 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 				std::string filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[0].length());
 				currentFilename = filename;
 				currentFilename.replace(filename.length() - 4, 4, "face.tiff");
-
-				if (!roi.compare("roi"))
-				{
-					cv::imwrite(outputPath + "/" + currentFilename, faceROI);
-
-				}
-				else if(!roi.compare("roialt"))
-				{
-					cv::imwrite(outputPath + "/" + currentFilename, faceROIAlt);
-
-				}
-				else if (!roi.compare("chip"))
-				{
-					cv::imwrite(outputPath + "/" + currentFilename, faceChip);
-				}
+		
+				cv::imwrite(outputPath + "/" + currentFilename, faceROI);
 
 				fs << "image_" + std::to_string(imageId) + "_face" << outputPath + "/" + currentFilename;
 			}
 			else
 			{
-				if (!roi.compare("roi"))
-				{
-					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROI);
-				}
-				else if (!roi.compare("roialt"))
-				{
-					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROIAlt);
-
-				}
-				else if (!roi.compare("chip"))
-				{
-					cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceChip);
-				}
+				cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROI);
 			}
 		}
 		catch (exception& e)
@@ -414,6 +388,20 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	}
 
 	fs.release();
+}
+
+std::vector<matrix<rgb_pixel>> jitter_image(const matrix<rgb_pixel>& img)
+{
+	// All this function does is make 100 copies of img, all slightly jittered by being
+	// zoomed, rotated, and translated a little bit differently. They are also randomly
+	// mirrored left to right.
+	thread_local dlib::rand rnd;
+
+	std::vector<matrix<rgb_pixel>> crops;
+	for (int i = 0; i < 100; ++i)
+		crops.push_back(jitter_image(img, rnd));
+
+	return crops;
 }
 
 std::vector<std::string> getListFile(std::string directory)
@@ -447,4 +435,9 @@ static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r)
 static dlib::rectangle openCVRectToDlib(cv::Rect r)
 {
 	return dlib::rectangle((long)r.tl().x, (long)r.tl().y, (long)r.br().x - 1, (long)r.br().y - 1);
+}
+
+bool checkCudaAvailable()
+{
+	return cv::cuda::getCudaEnabledDeviceCount() && USE_CUDA;
 }
