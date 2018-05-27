@@ -9,5 +9,5 @@
 #include "featureExtraction.h"
 #include "trainClassifier.h"
 
-void duplicateDatabase(std::string directory);
+void duplicateDatabase();
 void deleteFileIntoDirectory(std::string path);

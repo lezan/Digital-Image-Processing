@@ -16,11 +16,12 @@
 
 using namespace dlib;
 
-void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose);
-std::vector<std::string> getListFile(std::string directory);
+void getFace(std::string method, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose, bool dupllicateDataset);
+std::vector<std::string> getListFile(std::string directory, bool duplicateDataset);
 static cv::Rect dlibRectangleToOpenCV(dlib::rectangle r);
 static dlib::rectangle openCVRectToDlib(cv::Rect r);
 bool checkCudaAvailable();
+std::string duplicateImage(std::string filename);
 
 template <long num_filters, typename SUBNET> using con5d = con<num_filters, 5, 5, 2, 2, SUBNET>;
 template <long num_filters, typename SUBNET> using con5 = con<num_filters, 5, 5, 1, 1, SUBNET>;

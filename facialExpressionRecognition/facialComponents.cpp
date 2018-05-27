@@ -2,7 +2,7 @@
 
 // Problema dnn con la shape predictor a 68 punti https://github.com/davisking/dlib-models.
 
-void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose)
+void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose, bool duplicateDataset)
 {
 
 	// ***
@@ -12,10 +12,10 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	// ***
 
 	std::string inputPath = baseDatabasePath + "/" + nameDataset;
-	std::string outputPath = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult;
+	std::string outputPath;
 
 	// Version è 0 (zero) se sto selezionando la ROI nel dataset.
-	if (version == 0)
+	if (version == imageVersion::dataset)
 	{
 		outputPath = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult;
 	}
@@ -23,53 +23,55 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	else
 	{
 		// Utilizzo un path differente in questo caso perché non voglio "sporcare" la directory del dataset.
-		outputPath = baseDatabasePath + "/" + nameDataset + "/" + "temp";
+		outputPath = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryTest;
 	}
 
 	std::vector<std::string> imagePath;
 	
 	// Se si vuole prendere le immagini da una dadaset.
-	if (version == 0)
+	if (version == imageVersion::dataset)
 	{
-		imagePath = getListFile(inputPath);
+		imagePath = getListFile(inputPath, duplicateDataset);
 	}
 	// Se si vuole dare la singola immagine.
 	else
 	{
+		cv::Mat imageTemp;
 		// Se l'immagine che si vuole dare è salvata in una directory.
-		if (imageSourceType == 0)
+		if (imageSourceType == imageSourceTestType::file)
 		{
 			std::string tempPath;
 			cout << "Give me image path: " << endl;
 			std::cin.clear();
 			std::cin.sync();
 			std::getline(std::cin, tempPath);
-			imagePath.push_back(tempPath);
+			imageTemp = cv::imread(tempPath, CV_LOAD_IMAGE_COLOR);
 		}
 		// Se l'immagine vuole che sia presa dalla webcam.
 		else
 		{
 			cv::VideoCapture camera(0);
-			cv::Mat imageTempCamera;
 			if (camera.isOpened())
 			{
-				camera >> imageTempCamera;
+				camera >> imageTemp;
 			}
 
-			cv::resize(imageTempCamera, imageTempCamera, Size(256, 256));
-
-			cv::imwrite(baseDatabasePath + "/" + nameDataset + "/" + "temp" + "/" + "imageTempCamera.tiff", imageTempCamera);
-			imagePath.push_back(baseDatabasePath + "/" + nameDataset + "/" + "temp" + "/" + "imageTempCamera.tiff");
 			camera.release();
 		}
+
+		cv::resize(imageTemp, imageTemp, Size(256, 256));
+
+		cv::imwrite(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryTest + "/" + nameImageFileTest, imageTemp);
+		imagePath.push_back(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryTest + "/" + nameImageFileTest);
 	}
 
-	int imageSize = imagePath.size();
-
 	FileStorage fs(outputPath + "/" + fileList, FileStorage::WRITE);
-	if (version == 0)
+	int imageSize = 0;
+	if (version == imageVersion::dataset)
 	{
+		imageSize = imagePath.size();
 		fs << "number_of_image" << imageSize;
+
 	}
 
 	// ***
@@ -118,12 +120,6 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		// L'immagine viene caricata con un modello colore BGR.
 		image = cv::imread(imagePath[imageId], CV_LOAD_IMAGE_COLOR);
-
-		// Se l'input è l'immagine di testing ed è in una directory.
-		if (version == 1 && imageSourceType == 0)
-		{
-			cv::resize(image, image, Size(256, 256));
-		}
 
 		cv::cvtColor(image, gray, CV_BGR2GRAY);
 
@@ -363,13 +359,20 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			cv::resize(faceROI, faceROI, cv::Size(widthImageOutputResize, heightImageOutputResize));
 		}
 
-		std::string currentFilename;
 		try
 		{
-			if (version == 0)
+			if (version == imageVersion::dataset)
 			{
-				std::string filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[0].length());
-				currentFilename = filename;
+				std::string filename;
+				if (imageId % 2 == 0)
+				{
+					filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[imageId].length());
+				}
+				else
+				{
+					filename = imagePath[imageId].substr(inputPath.length() + 1 + 10, imagePath[imageId].length());
+				}
+				std::string currentFilename = filename;
 				currentFilename.replace(filename.length() - 4, 4, "face.tiff");
 		
 				cv::imwrite(outputPath + "/" + currentFilename, faceROI);
@@ -378,7 +381,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 			else
 			{
-				cv::imwrite(outputPath + "/" + "imageTempROI.tiff", faceROI);
+				cv::imwrite(outputPath + "/" + nameImageFileTestRoi, faceROI);
 			}
 		}
 		catch (exception& e)
@@ -404,7 +407,7 @@ std::vector<matrix<rgb_pixel>> jitter_image(const matrix<rgb_pixel>& img)
 	return crops;
 }
 
-std::vector<std::string> getListFile(std::string directory)
+std::vector<std::string> getListFile(std::string directory, bool duplicateDataset)
 {
 	std::vector<std::string> imagePath;
 	DIR *pDIR;
@@ -420,6 +423,12 @@ std::vector<std::string> getListFile(std::string directory)
 				if (size != std::string::npos)
 				{
 					imagePath.push_back(directory + "/" + name);
+					std::string nameImageDuplicate;
+					if (duplicateDataset)
+					{
+						nameImageDuplicate = duplicateImage(name);
+					}
+					imagePath.push_back(nameImageDuplicate);
 				}
 			}
 		}
@@ -440,4 +449,19 @@ static dlib::rectangle openCVRectToDlib(cv::Rect r)
 bool checkCudaAvailable()
 {
 	return cv::cuda::getCudaEnabledDeviceCount() && USE_CUDA;
+}
+
+std::string duplicateImage(std::string filename)
+{
+	cv::Mat image = cv::imread(baseDatabasePath + "/" + nameDataset + "/" + filename);
+	cv::Mat dst;
+	cv::flip(image, dst, 1);
+	std::string tempStringName = filename.substr(0, 7);
+	std::string tempStringNumber = filename.substr(7, filename.length() - 12);
+	int tempId = std::stoi(tempStringNumber);
+	tempId += 1;
+	tempStringNumber = std::to_string(tempId);
+	std::string currentFilename = tempStringName + tempStringNumber + ".tiff";
+	cv::imwrite(baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryImageDuplicate + "/" + currentFilename, dst);
+	return baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryImageDuplicate + "/" + currentFilename;
 }

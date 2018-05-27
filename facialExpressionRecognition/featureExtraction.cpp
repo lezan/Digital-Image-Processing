@@ -2,7 +2,7 @@
 
 cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 {
-	std::string inputFolder = baseDatabasePath + "/" + nameDataset + "/" + "temp";
+	std::string inputFolder = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryTest;
 
 	std::string inputFile = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + featuresExtractionAlgorithm + nameFileFeatures;
 	FileStorage in(inputFile, FileStorage::READ);
@@ -13,7 +13,7 @@ cv::Mat extractFeaturesFromSingleImage(std::string featuresExtractionAlgorithm)
 	std::string pcaFile = baseDatabasePath + "/" + nameDataset + "/" + nameDirectoryResult + "/" + namePca;
 	cv::FileStorage fsPca(pcaFile, cv::FileStorage::READ);
 
-	cv::Mat image = imread(inputFolder + "/" + "imageTempROI.tiff", CV_LOAD_IMAGE_GRAYSCALE);
+	cv::Mat image = cv::imread(inputFolder + "/" + nameImageFileTestRoi, CV_LOAD_IMAGE_GRAYSCALE);
 
 	cv::resize(image, image, Size(80, 80));
 

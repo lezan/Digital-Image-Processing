@@ -9,6 +9,7 @@ int main(int argc, char* argv[])
 	bool facePose;
 	std::string cascadeChose;
 	std::string tempString;
+	bool duplicateDataset;
 
 	std::cout <<
 		"param 1 : facial method" << endl <<
@@ -37,8 +38,8 @@ int main(int argc, char* argv[])
 			"\t -> lbp2 : lbp2 cascade;" << endl <<
         "param 6 : if duplication of dataset" << endl <<
             "\t -> default : no;" << endl <<
-            "\t -> 0 : no;" << endl <<
-            "\t -> 1 : yes;" << endl << endl;
+            "\t -> no : no;" << endl <<
+            "\t -> yes : yes;" << endl << endl;
 
 	if (argc > 1)
 	{
@@ -201,9 +202,18 @@ int main(int argc, char* argv[])
 
 	if (argc > 6)
 	{
-		if ((int)argv[6] == 1)
+		tempString = argv[6];
+		if (!tempString.compare("default"))
 		{
-			duplicateDatabase(baseDatabasePath + "/" + nameDataset);
+			duplicateDataset = false;
+		}
+		else if (!tempString.compare("yes"))
+		{
+			duplicateDataset = true;
+		}
+		else if (!tempString.compare("no"))
+		{
+			duplicateDataset = false;
 		}
 	}
 
@@ -211,7 +221,8 @@ int main(int argc, char* argv[])
 	std::cout << "Hist chose: " << histType << endl;
 	std::cout << "ROI chose: " << roi << endl;
 	std::cout << "Face pose chose: " << facePose << endl;
-	std::cout << "XML cascade chose: " << cascadeChose << endl << endl;
+	std::cout << "XML cascade chose: " << cascadeChose << endl;
+	std::cout << "Duplicate dataset: " << duplicateDataset << endl << endl;
 
 	cv::cuda::printShortCudaDeviceInfo(cv::cuda::getDevice());
 	std::cout << endl;
@@ -254,7 +265,7 @@ int main(int argc, char* argv[])
 						}
 
 						long long startFacialComponents = milliseconds_now();
-						getFace(facialMethod, histType, 0, 0, roi, facePose, cascadeChose);
+						getFace(facialMethod, histType, 0, 0, roi, facePose, cascadeChose, duplicateDataset);
 						long long elapsedFacialComponents = milliseconds_now() - startFacialComponents;
 						std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 
@@ -304,7 +315,7 @@ int main(int argc, char* argv[])
 		if (FACIAL_COMPONENTS_DO)
 		{
 			long long startFacialComponents = milliseconds_now();
-			getFace(facialMethod, histType, 0, 0, roi, facePose, cascadeChose);
+			getFace(facialMethod, histType, imageVersion::dataset, imageSourceTestType::file, roi, facePose, cascadeChose, duplicateDataset);
 			long long elapsedFacialComponents = milliseconds_now() - startFacialComponents;
 			std::cout << "Time elapsed for facial components: " << elapsedFacialComponents / 1000 << "s." << endl;
 		}
@@ -347,7 +358,7 @@ int main(int argc, char* argv[])
 
 		if (DO_PREDICT)
 		{
-			int sourceImage = 0; // 0 -> image; 1 -> camera;
+			int imageSourceType = imageSourceTestType::file; // 0 -> image; 1 -> camera;
 
 			std::string facialMethodInRun;
 			std::string histTypeInRun;
@@ -364,7 +375,7 @@ int main(int argc, char* argv[])
 			std::string c;
 			while (true)
 			{
-				std::cout << endl << "Give me facial method (cascade, hog, dnn)" << endl;
+				std::cout << endl << "Give me facial method (cascade, hog, dnn)." << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -386,7 +397,7 @@ int main(int argc, char* argv[])
 					std::cout << "Error facialMethod: put a default (cascade)." << endl;
 				}
 
-				std::cout << "Give me hist type (default, hist, clahe)" << endl;
+				std::cout << "Give me hist type (default, hist, clahe)." << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -415,7 +426,7 @@ int main(int argc, char* argv[])
 					}
 				}
 				
-				std::cout << "Give me roi (roi, roialt, chip, default)" << endl;
+				std::cout << "Give me roi (roi, roialt, chip, default)." << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -441,7 +452,7 @@ int main(int argc, char* argv[])
 					std::cout << "Error ROI: put a default (roi)." << endl;
 				}
 
-				std::cout << "Give me landmark (yes, no, default)" << endl;
+				std::cout << "Want face pose (yes, no, default)?" << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -486,7 +497,7 @@ int main(int argc, char* argv[])
 
 				if (!facialMethodInRun.compare("cascade"))
 				{
-					std::cout << "Give me cascade (default, alt, alt2, lbp or lbp2)" << endl;
+					std::cout << "Give me cascade (default, alt, alt2, lbp or lbp2)." << endl;
 					std::cin.clear();
 					std::cin.sync();
 					std::getline(std::cin, tempStringInRun);
@@ -527,13 +538,13 @@ int main(int argc, char* argv[])
 				std::cout << "Landmark chose: " << facePoseInRun << endl;
 				std::cout << "XML cascade chose: " << cascadeChoseInRun << endl << endl;
 
-				if (sourceImage == 0) // static image
+				if (imageSourceType == imageSourceTestType::file) // static image
 				{
-					getFace(facialMethodInRun, histTypeInRun, 1, 0, roiInRun, facePoseInRun, cascadeChoseInRun);
+					getFace(facialMethodInRun, histTypeInRun, imageVersion::test, imageSourceTestType::file, roiInRun, facePoseInRun, cascadeChoseInRun, false);
 				}
-				else if (sourceImage == 1) // camera image
+				else if (imageSourceType == imageSourceTestType::camera) // camera image
 				{
-					getFace(facialMethodInRun, histTypeInRun, 1, 1, roiInRun, facePoseInRun, cascadeChoseInRun);
+					getFace(facialMethodInRun, histTypeInRun, imageVersion::test, imageSourceTestType::camera, roiInRun, facePoseInRun, cascadeChoseInRun, false);
 				}
 				else
 				{
@@ -627,37 +638,6 @@ int main(int argc, char* argv[])
 
 	cv::destroyAllWindows();
 	return 0;
-}
-
-void duplicateDatabase(std::string directory)
-{
-	std::vector<std::string> imagePath;
-	DIR *pDIR;
-	struct dirent *entry;
-	if (pDIR = opendir(directory.c_str()))
-	{
-		while (entry = readdir(pDIR))
-		{
-			if (entry->d_type == DT_REG)
-			{
-				std::string name = entry->d_name;
-				std::string::size_type size = name.find(".tiff");
-				if (size != std::string::npos)
-				{
-					imagePath.push_back(directory + "/" + name);
-				}
-			}
-		}
-	}
-	for (int i = 0; i < imagePath.size(); ++i)
-	{
-		cv::Mat image = imread(imagePath[i]);
-		cv::Mat dst;
-		cv::flip(image, dst, 1);
-		std::string repeat = imagePath[i].substr(directory.length() + 1 + 5, 1);
-		std::string filename = imagePath[i].insert(directory.length() + 1 + 5 + 1, repeat);
-		cv::imwrite(filename, dst);
-	}
 }
 
 void deleteFileIntoDirectory(std::string path)

@@ -15,6 +15,7 @@ const std::string cascadeLbpDataName2 = "lbpcascade_frontalface_improved.xml";
 const std::string fileList = "list.yml";
 const std::string nameDataset = "jaffe";
 const std::string nameDirectoryResult = "result";
+const std::string nameDirectoryTest = "test";
 const std::string nameFileFeatures = "Features.yml";
 const std::string nameOutputFileAccuracyResult = "result.txt";
 const std::string nameSVMModelTrained = "svmModelTrained.xml";
@@ -24,10 +25,16 @@ const std::string nameRandomForestModelTrained = "randomForestModelTrained.xml";
 const std::string nameLogisticRegressionModelTrained = "logisticRegressionModelTrained.xml";
 const std::string nameDictionary = "dictionary.yml";
 const std::string namePca = "pca.yml";
+const std::string nameImageFileTest = "imageTest.tiff";
+const std::string nameImageFileTestRoi = "imageTestRoi.tiff";
+const std::string nameDirectoryImageDuplicate = "duplicate";
 const int widthImageOutputResize = 160;
 const int heightImageOutputResize = 160;
 const int dimensionImageOutputResize = 160;
 const int USE_CUDA = 1;
+
+enum imageVersion {dataset = 0, test = 1};
+enum imageSourceTestType {file = 0, camera = 1};
 
 #include <string>
 #include <iostream>
