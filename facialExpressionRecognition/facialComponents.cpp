@@ -92,7 +92,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	cv::CascadeClassifier faceCascade;
 	Ptr<cv::cuda::CascadeClassifier> faceCascadeGpu;
 
-	net_type net;
+	net_type netCNN;
 
 	cv::dnn::Net netOpenCVDNN;
 
@@ -103,7 +103,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	if (!facialMethod.compare("cnn"))
 	{
-		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> net;
+		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> netCNN;
 		if (!roi.compare("roialt") || !roi.compare("chip"))
 		{
 			dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
@@ -114,10 +114,6 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 	{
 		netOpenCVDNN = cv::dnn::readNetFromCaffe(baseDatabasePath + "/" + dnnProtoOpenCV, baseDatabasePath + "/" + dnnModelOpenCV);
 	}
-
-	int count = 0;
-	int countFacePose = 0;
-	int countRoi = 0;
 
 	for (int imageId = 0; imageId < imageSize; ++imageId)
 	{
@@ -132,28 +128,21 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		cv::cvtColor(image, gray, CV_BGR2GRAY);
 
-		if (!facialMethod.compare("cnn"))
+		// Aumento dei contrasti nell'immagine.
+		if (!histType.compare("clahe"))
 		{
-			gray.copyTo(output);
+			double clipLimit = 4.0f;
+			Size tileGridSize(8, 8);
+			Ptr<CLAHE> clahe = cv::createCLAHE(2.0, tileGridSize);
+			clahe->apply(gray, output);
+		}
+		else if (!histType.compare("hist"))
+		{
+			equalizeHist(gray, output);
 		}
 		else
 		{
-			// Aumento dei contrasti nell'immagine.
-			if (!histType.compare("clahe"))
-			{
-				double clipLimit = 4.0f;
-				Size tileGridSize(8, 8);
-				Ptr<CLAHE> clahe = cv::createCLAHE(2.0, tileGridSize);
-				clahe->apply(gray, output);
-			}
-			else if (!histType.compare("hist"))
-			{
-				equalizeHist(gray, output);
-			}
-			else
-			{
-				gray.copyTo(output);
-			}
+			gray.copyTo(output);
 		}
 
 		dlib::cv_image<uchar> outputDlib(output);
@@ -163,7 +152,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 		if (!facialMethod.compare("hog"))
 		{
 			detector = dlib::get_frontal_face_detector();
-			
+
 			std::vector<dlib::rectangle> faces = detector(outputDlib);
 			if (faces.size() > 1)
 			{
@@ -286,7 +275,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			{
 				dlib::matrix<dlib::rgb_pixel> imageCNN;
 				dlib::assign_image(imageCNN, dlib::cv_image<rgb_pixel>(image));
-				std::vector<dlib::mmod_rect> dets = net(imageCNN);
+				std::vector<dlib::mmod_rect> dets = netCNN(imageCNN);
 				//std::vector<dlib::mmod_rect> dets = net(jitter_image(imageCNN));
 
 				if (facePose)
@@ -449,8 +438,6 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			std::cout << e.what() << endl;
 		}
 	}
-
-	std::cout << count << " " << countFacePose << " " << countRoi << endl;
 
 	fs.release();
 }

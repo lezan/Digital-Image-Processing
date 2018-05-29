@@ -82,11 +82,6 @@ int main(int argc, char* argv[])
 			histType = "default";
 			std::cout << "You chose cnn as facial method. You are forced to use null (default) as histType." << endl;
 		}
-		else if (!facialMethod.compare("dnn"))
-		{
-			histType = "default";
-			std::cout << "You chose dnn as facial method. You are forced to use bgr image as input." << endl;
-		}
 		else
 		{
 			if (!tempString.compare("hist"))
@@ -419,11 +414,6 @@ int main(int argc, char* argv[])
 				{
 					histTypeInRun = "default";
 					std::cout << "You chose cnn as facial method. You are forced to use null (default) as histType." << endl;
-				}
-				else if (!facialMethodInRun.compare("dnn"))
-				{
-					histTypeInRun = "default";
-					std::cout << "You chose dnn as facial method. You are forced to use bgr image as input." << endl;
 				}
 				else
 				{
