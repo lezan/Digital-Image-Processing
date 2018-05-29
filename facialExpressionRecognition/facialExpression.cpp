@@ -14,9 +14,10 @@ int main(int argc, char* argv[])
 	std::cout <<
 		"param 1 : facial method" << endl <<
 			"\t -> default : cascade;" << endl <<
-			"\t -> cascade : cascade;" << endl <<
-			"\t -> dnn : dnn " << endl <<
-            "\t -> hog : hog;" << endl <<
+			"\t -> cascade : cascade (opencv);" << endl <<
+			"\t -> cnn : cnn (dlib) " << endl <<
+			"\t -> dnn : dnn (opencv) " << endl <<
+            "\t -> hog : hog (dlib);" << endl <<
         "param 2 : histogram type" << endl <<
             "\t -> default : null;" << endl <<
             "\t -> hist : histogram;" << endl <<
@@ -53,6 +54,10 @@ int main(int argc, char* argv[])
 		{
 			facialMethod = "hog";
 		}
+		else if (!tempString.compare("cnn"))
+		{
+			facialMethod = "cnn";
+		}
 		else if (!tempString.compare("dnn"))
 		{
 			facialMethod = "dnn";
@@ -72,10 +77,15 @@ int main(int argc, char* argv[])
 	{
 		tempString = argv[2];
 
-		if (!facialMethod.compare("dnn"))
+		if (!facialMethod.compare("cnn"))
 		{
 			histType = "default";
-			std::cout << "You chose dnn as facial method. You are forced to use null as histType." << endl;
+			std::cout << "You chose cnn as facial method. You are forced to use null (default) as histType." << endl;
+		}
+		else if (!facialMethod.compare("dnn"))
+		{
+			histType = "default";
+			std::cout << "You chose dnn as facial method. You are forced to use bgr image as input." << endl;
 		}
 		else
 		{
@@ -375,7 +385,7 @@ int main(int argc, char* argv[])
 			std::string c;
 			while (true)
 			{
-				std::cout << endl << "Give me facial method (cascade, hog, dnn)." << endl;
+				std::cout << endl << "Give me facial method (cascade, hog, cnn, dnn)." << endl;
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
@@ -386,6 +396,10 @@ int main(int argc, char* argv[])
 				else if (!tempStringInRun.compare("hog"))
 				{
 					facialMethodInRun = "hog";
+				}
+				else if (!tempStringInRun.compare("cnn"))
+				{
+					facialMethodInRun = "cnn";
 				}
 				else if (!tempStringInRun.compare("dnn"))
 				{
@@ -401,9 +415,15 @@ int main(int argc, char* argv[])
 				std::cin.clear();
 				std::cin.sync();
 				std::getline(std::cin, tempStringInRun);
-				if (!facialMethodInRun.compare("dnn"))
+				if (!facialMethodInRun.compare("cnn"))
 				{
 					histTypeInRun = "default";
+					std::cout << "You chose cnn as facial method. You are forced to use null (default) as histType." << endl;
+				}
+				else if (!facialMethodInRun.compare("dnn"))
+				{
+					histTypeInRun = "default";
+					std::cout << "You chose dnn as facial method. You are forced to use bgr image as input." << endl;
 				}
 				else
 				{

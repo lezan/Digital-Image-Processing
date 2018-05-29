@@ -1,6 +1,6 @@
 #include "facialComponents.h"
 
-// Problema dnn con la shape predictor a 68 punti https://github.com/davisking/dlib-models.
+// Problema cnn con la shape predictor a 68 punti https://github.com/davisking/dlib-models.
 
 void getFace(std::string facialMethod, std::string histType, int version, int imageSourceType, std::string roi, bool facePose, std::string cascadeChose, bool duplicateDataset)
 {
@@ -94,26 +94,35 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 	net_type net;
 
-	if (facialMethod.compare("dnn") && (!roi.compare("roialt") || !roi.compare("chip")))
+	cv::dnn::Net netOpenCVDNN;
+
+	if (facialMethod.compare("cnn") && (!roi.compare("roialt") || !roi.compare("chip")))
 	{
 		dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName) >> predictor;
 	}
 
-	if (!facialMethod.compare("dnn"))
+	if (!facialMethod.compare("cnn"))
 	{
-		dlib::deserialize(baseDatabasePath + "/" + dnnFaceDetector) >> net;
+		dlib::deserialize(baseDatabasePath + "/" + cnnFaceDetector) >> net;
 		if (!roi.compare("roialt") || !roi.compare("chip"))
 		{
 			dlib::deserialize(baseDatabasePath + "/" + shapePredictorDataName2) >> predictor;
 		}
 	}
 
-	cv::Mat faceROI;
-	//cv::Mat faceROIAlt;
-	//cv::Mat faceChip;
+	if (!facialMethod.compare("dnn"))
+	{
+		netOpenCVDNN = cv::dnn::readNetFromCaffe(baseDatabasePath + "/" + dnnProtoOpenCV, baseDatabasePath + "/" + dnnModelOpenCV);
+	}
+
+	int count = 0;
+	int countFacePose = 0;
+	int countRoi = 0;
 
 	for (int imageId = 0; imageId < imageSize; ++imageId)
 	{
+
+		cv::Mat faceROI;
 		cv::Mat image;
 		cv::Mat gray;
 		cv::Mat output;
@@ -123,7 +132,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 
 		cv::cvtColor(image, gray, CV_BGR2GRAY);
 
-		if (!facialMethod.compare("dnn"))
+		if (!facialMethod.compare("cnn"))
 		{
 			gray.copyTo(output);
 		}
@@ -271,18 +280,18 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			}
 
 		}
-		else if (!facialMethod.compare("dnn"))
+		else if (!facialMethod.compare("cnn"))
 		{
 			try
 			{
-				dlib::matrix<dlib::rgb_pixel> imageDNN;
-				dlib::assign_image(imageDNN, dlib::cv_image<rgb_pixel>(image));
-				std::vector<dlib::mmod_rect> dets = net(imageDNN);
-				//std::vector<dlib::mmod_rect> dets = net(jitter_image(imageDNN));
+				dlib::matrix<dlib::rgb_pixel> imageCNN;
+				dlib::assign_image(imageCNN, dlib::cv_image<rgb_pixel>(image));
+				std::vector<dlib::mmod_rect> dets = net(imageCNN);
+				//std::vector<dlib::mmod_rect> dets = net(jitter_image(imageCNN));
 
 				if (facePose)
 				{
-					shape = predictor(imageDNN, dets[0].rect);
+					shape = predictor(imageCNN, dets[0].rect);
 				}
 				else
 				{
@@ -292,6 +301,49 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			catch (exception& e)
 			{
 				std::cout << e.what() << endl;
+			}
+		}
+		else if (!facialMethod.compare("dnn"))
+		{
+			cv::Mat temp;
+			cv::Mat imageGrayBGR;
+			cv::Mat imageFalseBGR[] = { output, output, output };
+			cv::merge(imageFalseBGR, 3, temp);
+			temp.convertTo(imageGrayBGR, image.type());
+			cv::Mat imageDNNBlob = cv::dnn::blobFromImage(imageGrayBGR, 1.0, cv::Size(256, 256), Scalar(104.0, 177.0, 123.0), false, false);
+			netOpenCVDNN.setInput(imageDNNBlob, "data");
+			cv::Mat detection = netOpenCVDNN.forward("detection_out");
+			cv::Mat faces(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
+			for (int i = 0; i < faces.rows; i++)
+			{
+				float confidence = faces.at<float>(i, 2);
+
+				if (confidence > 0.95)
+				{
+					int left = static_cast<int>(faces.at<float>(i, 3) * imageGrayBGR.cols);
+					int top = static_cast<int>(faces.at<float>(i, 4) * imageGrayBGR.rows);
+					int right = static_cast<int>(faces.at<float>(i, 5) * imageGrayBGR.cols);
+					int bottom = static_cast<int>(faces.at<float>(i, 6) * imageGrayBGR.rows);
+
+					left = std::min(std::max(0, left), imageGrayBGR.cols - 1);
+					top = std::min(std::max(0, top), imageGrayBGR.rows - 1);
+					right = std::min(std::max(0, right), imageGrayBGR.cols - 1);
+					bottom = std::min(std::max(0, bottom), imageGrayBGR.rows - 1);
+
+					cv::Rect faceRect((int)left, (int)top, (int)(right - left), (int)(bottom - top));
+
+					if (facePose)
+					{
+						shape = predictor(outputDlib, openCVRectToDlib(faceRect));
+					}
+					else
+					{
+						//faceROI = cv::Mat(image, faceRect);
+						//cv::cvtColor(faceROI, faceROI, COLOR_BGR2GRAY);
+						faceROI = cv::Mat(output, faceRect);
+					}
+					break;
+				}
 			}
 		}
 		else
@@ -311,7 +363,7 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			cv::Point centerEyeLeft;
 			int widthEyeRight;
 			int widthEyeLeft;
-			if (!facialMethod.compare("dnn"))
+			if (!facialMethod.compare("cnn"))
 			{
 				centerEyeRight = cv::Point(
 					(shape.part(1).x() + shape.part(0).x()) / 2,
@@ -364,14 +416,22 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			if (version == imageVersion::dataset)
 			{
 				std::string filename;
-				if (imageId % 2 == 0)
+				if (duplicateDataset)
 				{
-					filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[imageId].length());
+					if (imageId % 2 == 0)
+					{
+						filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[imageId].length());
+					}
+					else
+					{
+						filename = imagePath[imageId].substr(inputPath.length() + 1 + 10, imagePath[imageId].length());
+					}
 				}
 				else
 				{
-					filename = imagePath[imageId].substr(inputPath.length() + 1 + 10, imagePath[imageId].length());
+					filename = imagePath[imageId].substr(inputPath.length() + 1, imagePath[imageId].length());
 				}
+				
 				std::string currentFilename = filename;
 				currentFilename.replace(filename.length() - 4, 4, "face.tiff");
 		
@@ -389,6 +449,8 @@ void getFace(std::string facialMethod, std::string histType, int version, int im
 			std::cout << e.what() << endl;
 		}
 	}
+
+	std::cout << count << " " << countFacePose << " " << countRoi << endl;
 
 	fs.release();
 }
@@ -423,12 +485,12 @@ std::vector<std::string> getListFile(std::string directory, bool duplicateDatase
 				if (size != std::string::npos)
 				{
 					imagePath.push_back(directory + "/" + name);
-					std::string nameImageDuplicate;
 					if (duplicateDataset)
 					{
+						std::string nameImageDuplicate;
 						nameImageDuplicate = duplicateImage(name);
+						imagePath.push_back(nameImageDuplicate);
 					}
-					imagePath.push_back(nameImageDuplicate);
 				}
 			}
 		}
